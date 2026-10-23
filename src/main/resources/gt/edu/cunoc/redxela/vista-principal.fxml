@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      alignment="CENTER" spacing="18">
+    <padding>
+        <Insets top="32" right="32" bottom="32" left="32"/>
+    </padding>
+    <Label text="REDXela">
+        <font><Font size="32"/></font>
+    </Label>
+    <Label text="Simulador de un centro de distribución" wrapText="true"/>
+    <Label text="Sistemas Operativos 2 - CUNOC"/>
+    <Label text="Avance 1: estructura del proyecto e interfaz inicial." wrapText="true"/>
+    <Label text="La simulación todavía no está implementada." wrapText="true"/>
+</VBox>

@@ -4,4 +4,5 @@ module gt.edu.cunoc.redxela {
 
     exports gt.edu.cunoc.redxela;
     exports gt.edu.cunoc.redxela.modelo;
+    exports gt.edu.cunoc.redxela.catalogo;
 }

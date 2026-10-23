@@ -7,8 +7,11 @@ JavaFX/FXML y procesamiento concurrente previsto para las operaciones del centro
 ## Estado de desarrollo
 
 La aplicación tiene una ventana inicial y un modelo de niveles de servicio,
-recursos y tipos de mercancía. La ejecución de pedidos y la administración
-concurrente de recursos están pendientes.
+recursos, tipos de mercancía y pedidos. Incluye un catálogo fijo de cinco productos,
+detalle por producto, cantidades positivas, identificadores únicos y total de
+artículos. La ejecución de pedidos y la administración concurrente de recursos
+están pendientes. Las cuentas de clientes y los formularios se incorporarán
+en los siguientes avances.
 
 ## Herramientas
 

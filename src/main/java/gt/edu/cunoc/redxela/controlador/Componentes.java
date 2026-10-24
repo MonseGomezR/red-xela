@@ -5,10 +5,20 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import java.util.function.Function;
 import javafx.beans.property.ReadOnlyStringWrapper;
+import org.kordamp.ikonli.feather.Feather;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 /** Elementos compartidos por las pantallas del centro. */
 final class Componentes {
     private Componentes() { }
+    static FontIcon icono(Feather simbolo, int tamano) {
+        FontIcon icono = FontIcon.of(simbolo, tamano);
+        icono.getStyleClass().add("icono");
+        return icono;
+    }
+    static Label tituloIcono(Feather simbolo, String titulo, String estilo) {
+        Label label = texto(titulo, estilo); label.setGraphic(icono(simbolo, 20)); label.setGraphicTextGap(12); return label;
+    }
     static Label texto(String texto, String estilo) {
         Label label = new Label(texto); label.getStyleClass().add(estilo); return label;
     }

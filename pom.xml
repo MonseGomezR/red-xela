@@ -14,9 +14,20 @@
         <maven.compiler.release>21</maven.compiler.release>
         <javafx.version>21.0.2</javafx.version>
         <junit.version>5.10.3</junit.version>
+        <ikonli.version>12.3.1</ikonli.version>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.kordamp.ikonli</groupId>
+            <artifactId>ikonli-javafx</artifactId>
+            <version>${ikonli.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kordamp.ikonli</groupId>
+            <artifactId>ikonli-feather-pack</artifactId>
+            <version>${ikonli.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>

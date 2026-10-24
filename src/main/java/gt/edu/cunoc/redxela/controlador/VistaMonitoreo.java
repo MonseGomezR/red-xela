@@ -17,6 +17,7 @@ final class VistaMonitoreo extends VBox {
             mensajeConflicto=parrafo("","muted"), totalActivos=texto("0 pedidos activos","muted"),
             tituloConflicto=tituloIcono(Feather.ALERT_CIRCLE,"MONITOR DE DEADLOCKS","dato-rojo");
     private final VBox activos=new VBox(18), cola=new VBox(20);
+    private final Label avisoInventario=parrafo("","dato-amarillo");
     private final List<RecursoVisual> recursos=new ArrayList<>();
     private final Button verTodos;
     private record RecursoVisual(TipoRecurso tipo,int numero,VBox tarjeta,Label titular,Label detalle,FadeTransition pulso,ProgressIndicator progreso){}
@@ -64,7 +65,7 @@ final class VistaMonitoreo extends VBox {
         VBox izquierda=new VBox(24,fila(tituloIcono(Feather.CPU,"Estado de Recursos Compartidos","titulo-seccion"),espacio(),
                 tituloIcono(Feather.CIRCLE,"DISPONIBLE","leyenda-cian"),tituloIcono(Feather.CIRCLE,"OCUPADO","leyenda-amarilla")),estados,
                 tarjeta(fila(parrafo("PEDIDOS EN PROCESAMIENTO ACTIVO","titulo-tarjeta"),espacio(),totalActivos),new Separator(),activos));
-        getChildren().addAll(indicadores,columnas(izquierda,new VBox(30,conflicto,lista),67,880));actualizar();
+        getChildren().addAll(avisoInventario,indicadores,columnas(izquierda,new VBox(30,conflicto,lista),67,880));actualizar();
     }
     private VBox kpi(Feather simbolo,Label valor,String titulo,Label detalle,String color){
         Label icono=tituloIcono(simbolo,"","icono-kpi");icono.getStyleClass().add("tinte-"+color);
@@ -121,10 +122,15 @@ final class VistaMonitoreo extends VBox {
             activos.getChildren().add(fila(texto("N"+p.pedido().nivelServicio().getPrioridad(),"nivel-pedido"),datos,new VBox(7,texto("RECURSOS","etiqueta"),iconos)));
         }
         cola.getChildren().clear();var pendientes=centro.motor.espera();verTodos.setText("VER TODOS LOS PEDIDOS ("+pedidos.size()+")");
+        long sinStock=pendientes.stream().filter(p->p.estado()==EstadoPedido.ESPERANDO_INVENTARIO).count();
+        avisoInventario.setVisible(sinStock>0);avisoInventario.setManaged(sinStock>0);
+        avisoInventario.setText((sinStock==1?"Hay un pedido esperando existencias. ":"Hay "+sinStock+" pedidos esperando existencias. ")
+                +"Registra una entrada en Inventario, Recibir mercadería.");
         if(pendientes.isEmpty())cola.getChildren().add(texto("La lista de espera está vacía.","muted"));
         for(var p:pendientes.stream().limit(6).toList()){
             VBox item=new VBox(6,fila(texto("Pedido #"+centro.identificador(p.pedido()),"destacado"),espacio(),texto(p.pedido().nivelServicio().toString(),"dato-cian")),
-                    parrafo(p.pedido().detalles().getFirst().producto().tipoMercancia()+", "+p.pedido().getTotalArticulos()+" artículos, %.1fm en cola".formatted(p.espera()),"muted"));
+                    parrafo(p.pedido().detalles().getFirst().producto().tipoMercancia()+", "+p.pedido().getTotalArticulos()+" artículos, %.1fm en cola".formatted(p.espera()),"muted"),
+                    texto(p.fase(),p.estado()==EstadoPedido.ESPERANDO_INVENTARIO?"dato-amarillo":"muted"));
             item.getStyleClass().add("fila-espera");cola.getChildren().add(item);
         }
     }

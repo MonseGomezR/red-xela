@@ -9,11 +9,11 @@ import java.util.Optional;
 /** Catálogo común para la recepción de mercancía y el registro de pedidos. */
 public final class CatalogoProductos {
     private static final List<Producto> PRODUCTOS = List.of(
-            new Producto("GEN-001", "Cuaderno", TipoMercancia.GENERAL),
-            new Producto("FRA-001", "Vaso de vidrio", TipoMercancia.FRAGIL),
-            new Producto("PES-001", "Saco de cemento", TipoMercancia.PESADA),
-            new Producto("VOL-001", "Estantería", TipoMercancia.VOLUMINOSA),
-            new Producto("ELE-001", "Computadora portátil", TipoMercancia.ELECTRONICA));
+            new Producto("ELE-001", "Smartphone Galaxy S24", TipoMercancia.ELECTRONICA),
+            new Producto("PES-001", "Caja Herramientas 50pzs", TipoMercancia.PESADA),
+            new Producto("VOL-001", "Juego de Comedor 6p", TipoMercancia.VOLUMINOSA),
+            new Producto("FRA-001", "Vajilla de porcelana", TipoMercancia.FRAGIL),
+            new Producto("GEN-001", "Paquete de ropa", TipoMercancia.GENERAL));
 
     private CatalogoProductos() {
     }

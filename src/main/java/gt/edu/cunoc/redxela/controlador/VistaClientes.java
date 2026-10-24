@@ -24,15 +24,17 @@ final class VistaClientes extends VBox {
                 new VBox(8,texto("NOMBRE","etiqueta"),nombre),new VBox(8,texto("CORREO ELECTRÓNICO","etiqueta"),correo),
                 new VBox(8,texto("SERVICIO CONTRATADO","etiqueta"),nivel),
                 boton("Registrar cuenta","boton-primario",this::registrar),aviso);
-        formulario.setMaxWidth(900);
+        formulario.setMaxWidth(Double.MAX_VALUE);
         cuentas.getColumns().add(columna("Cliente",Cliente::nombre,260));
         cuentas.getColumns().add(columna("Correo electrónico",Cliente::correo,300));
         cuentas.getColumns().add(columna("Servicio contratado",c->c.nivelServicio().toString(),180));
-        cuentas.setPrefHeight(230);cuentas.setPlaceholder(texto("No hay cuentas registradas.","muted"));
+        cuentas.setPrefHeight(390);cuentas.setPlaceholder(texto("No hay cuentas registradas.","muted"));
+        cuentas.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         Button usar=boton("Crear pedido con esta cuenta","boton-secundario",()->{
             Cliente cliente=cuentas.getSelectionModel().getSelectedItem();if(cliente!=null)usarCuenta.accept(cliente);
         });usar.disableProperty().bind(cuentas.getSelectionModel().selectedItemProperty().isNull());
-        getChildren().addAll(formulario,texto("CUENTAS REGISTRADAS","titulo-tarjeta"),cuentas,usar);actualizar();
+        VBox listado=new VBox(18,texto("CUENTAS REGISTRADAS","titulo-tarjeta"),cuentas,usar);
+        getChildren().add(columnas(listado,formulario,62,850));actualizar();
     }
     private void registrar(){
         try{

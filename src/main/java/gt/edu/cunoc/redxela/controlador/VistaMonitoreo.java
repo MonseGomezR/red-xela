@@ -23,7 +23,7 @@ final class VistaMonitoreo extends VBox {
     private record RecursoVisual(TipoRecurso tipo,int numero,VBox tarjeta,Label titular,Label detalle,FadeTransition pulso,ProgressIndicator progreso){}
 
     VistaMonitoreo(ContextoCentro centro,Runnable administrar,Runnable historial) {
-        this.centro=centro;setSpacing(30);getStyleClass().add("pagina");
+        this.centro=centro;setSpacing(22);getStyleClass().add("pagina");
         GridPane indicadores=new GridPane();indicadores.setHgap(24);indicadores.setVgap(20);
         indicadores.getChildren().addAll(kpi(Feather.CHECK_CIRCLE,completados,"PEDIDOS COMPLETADOS",texto("Sesión actual","exito"),"cian"),
                 kpi(Feather.CLOCK,espera,"TIEMPO PROM. ESPERA",texto("Promedio","dato-amarillo"),"azul"),
@@ -34,7 +34,7 @@ final class VistaMonitoreo extends VBox {
             for(int i=0;i<n;i++){ColumnConstraints c=new ColumnConstraints();c.setPercentWidth(100.0/n);c.setMinWidth(0);indicadores.getColumnConstraints().add(c);}
             for(int i=0;i<4;i++){GridPane.setColumnIndex(indicadores.getChildren().get(i),i%n);GridPane.setRowIndex(indicadores.getChildren().get(i),i/n);}
         });
-        GridPane grid=new GridPane();grid.setHgap(14);grid.setVgap(14);
+        GridPane grid=new GridPane();grid.setHgap(10);grid.setVgap(10);
         List<int[]> posiciones=new ArrayList<>();
         agregar(grid,TipoRecurso.ESTACION_EMPAQUE,1,0,0,1);agregar(grid,TipoRecurso.ESTACION_EMPAQUE,2,1,0,1);
         agregar(grid,TipoRecurso.MONTACARGAS,1,2,0,1);agregar(grid,TipoRecurso.MONTACARGAS,2,3,0,1);
@@ -59,25 +59,26 @@ final class VistaMonitoreo extends VBox {
         politica.setPrefWidth(110);politica.setMaxWidth(110);politica.getStyleClass().add("politica");politica.setOnAction(e->centro.motor.politica(politica.getValue()));
         verTodos=boton("VER TODOS LOS PEDIDOS (0)","boton-enlace",historial);verTodos.setMaxWidth(Double.MAX_VALUE);
         Region relleno=new Region();VBox.setVgrow(relleno,Priority.ALWAYS);
-        VBox lista=tarjeta(fila(parrafo("LISTA DE ESPERA","titulo-tarjeta"),espacio(),politica),new Separator(),cola,relleno,new Separator(),verTodos);lista.setMinHeight(410);
+        VBox lista=tarjeta(fila(parrafo("LISTA DE ESPERA","titulo-tarjeta"),espacio(),politica),new Separator(),cola,relleno,new Separator(),verTodos);lista.setMinHeight(280);
         Button resolver=boton("Resolver Manualmente","boton-rojo",administrar);resolver.setMaxWidth(Double.MAX_VALUE);
         VBox conflicto=tarjeta(tituloConflicto,mensajeConflicto,resolver);conflicto.getStyleClass().add("conflicto");
-        VBox izquierda=new VBox(24,fila(tituloIcono(Feather.CPU,"Estado de Recursos Compartidos","titulo-seccion"),espacio(),
+        VBox izquierda=new VBox(18,fila(tituloIcono(Feather.CPU,"Estado de Recursos Compartidos","titulo-seccion"),espacio(),
                 tituloIcono(Feather.CIRCLE,"DISPONIBLE","leyenda-cian"),tituloIcono(Feather.CIRCLE,"OCUPADO","leyenda-amarilla")),estados,
                 tarjeta(fila(parrafo("PEDIDOS EN PROCESAMIENTO ACTIVO","titulo-tarjeta"),espacio(),totalActivos),new Separator(),activos));
         getChildren().addAll(avisoInventario,indicadores,columnas(izquierda,new VBox(30,conflicto,lista),67,880));actualizar();
     }
     private VBox kpi(Feather simbolo,Label valor,String titulo,Label detalle,String color){
         Label icono=tituloIcono(simbolo,"","icono-kpi");icono.getStyleClass().add("tinte-"+color);
-        VBox box=tarjeta(fila(icono,espacio(),detalle),valor,texto(titulo,"etiqueta"));box.getStyleClass().addAll("kpi","kpi-"+color);return box;
+        VBox box=tarjeta(fila(parrafo(titulo,"etiqueta"),espacio(),icono),valor,detalle);box.getStyleClass().addAll("kpi","kpi-"+color);return box;
     }
     private void agregar(GridPane grid,TipoRecurso tipo,int numero,int columna,int fila,int ancho){
         Label simbolo=tituloIcono(iconoRecurso(tipo),"","simbolo-recurso"), titular=texto("DISPONIBLE","destacado"),detalle=parrafo("Listo para procesar","muted");
         Label badge=texto(nombre(tipo,numero),"badge");
-        VBox card=tarjeta(Componentes.fila(simbolo,espacio(),badge),titular,detalle);card.setMinWidth(0);card.setMaxWidth(Double.MAX_VALUE);card.getStyleClass().add("recurso");
+        VBox card=tarjeta(Componentes.fila(badge,espacio(),simbolo),titular,detalle);card.setMinWidth(0);card.setMaxWidth(Double.MAX_VALUE);card.getStyleClass().add("recurso");
         ProgressIndicator progreso=null;
         if(tipo==TipoRecurso.ESCANER){
-            progreso=new ProgressIndicator(0);progreso.setPrefSize(44,44);progreso.setMaxSize(44,44);
+            card.getStyleClass().add("recurso-escaner");
+            progreso=new ProgressIndicator(0);progreso.setPrefSize(32,32);progreso.setMaxSize(32,32);
             HBox cuerpo=Componentes.fila(new VBox(7,titular,detalle),espacio(),progreso);
             card.getChildren().setAll(Componentes.fila(simbolo,texto(nombre(tipo,numero),"destacado")),cuerpo);
         }
@@ -119,7 +120,8 @@ final class VistaMonitoreo extends VBox {
                     parrafo(resumenProductos(p.pedido()),"etiqueta"),barra);HBox.setHgrow(datos,Priority.ALWAYS);
             HBox iconos=new HBox(5);String titular="P-"+p.pedido().id().toString().substring(0,8);
             estados.stream().filter(e->titular.equals(e.titular())).map(GestorRecursos.Estado::tipo).distinct().forEach(t->iconos.getChildren().add(icono(iconoRecurso(t),14)));
-            activos.getChildren().add(fila(texto("N"+p.pedido().nivelServicio().getPrioridad(),"nivel-pedido"),datos,new VBox(7,texto("RECURSOS","etiqueta"),iconos)));
+            HBox registro=fila(texto("N"+p.pedido().nivelServicio().getPrioridad(),"nivel-pedido"),datos,new VBox(7,texto("RECURSOS","etiqueta"),iconos));
+            registro.getStyleClass().add("fila-proceso");activos.getChildren().add(registro);
         }
         cola.getChildren().clear();var pendientes=centro.motor.espera();verTodos.setText("VER TODOS LOS PEDIDOS ("+pedidos.size()+")");
         long sinStock=pendientes.stream().filter(p->p.estado()==EstadoPedido.ESPERANDO_INVENTARIO).count();

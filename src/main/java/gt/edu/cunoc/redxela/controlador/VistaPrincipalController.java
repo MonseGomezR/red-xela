@@ -4,6 +4,8 @@ import gt.edu.cunoc.redxela.servicio.*;
 import javafx.animation.*;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.paint.Color;
 import javafx.scene.layout.*;
 import javafx.scene.control.*;
 import javafx.util.Duration;
@@ -27,6 +29,8 @@ public final class VistaPrincipalController implements AutoCloseable {
     private FadeTransition pulso;
     private Pagina pagina;
     @FXML private ScrollPane contenido;
+    @FXML private StackPane superficie;
+    @FXML private Canvas reticula;
     @FXML private Label titulo, estado, capacidad, entorno, aviso, pie;
     @FXML private ProgressBar barraCapacidad;
     @FXML private Button navMonitoreo, navPedidos, navInventario, navAdmin, iniciar, pausar, avanzar;
@@ -36,6 +40,9 @@ public final class VistaPrincipalController implements AutoCloseable {
     @FXML private ComboBox<String> velocidad;
 
     @FXML private void initialize() {
+        reticula.setManaged(false);
+        reticula.widthProperty().bind(superficie.widthProperty());reticula.heightProperty().bind(superficie.heightProperty());
+        reticula.widthProperty().addListener((o,a,b)->dibujarFondo());reticula.heightProperty().addListener((o,a,b)->dibujarFondo());
         monitoreo=new VistaMonitoreo(centro,this::administrar,this::historial);
         inventario=new VistaInventario(centro);
         operaciones=new VistasOperativas(centro);
@@ -54,6 +61,12 @@ public final class VistaPrincipalController implements AutoCloseable {
         pulso.setAutoReverse(true);pulso.setCycleCount(Animation.INDEFINITE);
         refresco=new Timeline(new KeyFrame(Duration.millis(350),e->actualizar()));refresco.setCycleCount(Animation.INDEFINITE);
         mostrar(Pagina.MONITOREO);refresco.play();
+    }
+    /** La trama se vuelve a dibujar al redimensionar, sin intervenir en la simulación. */
+    private void dibujarFondo(){
+        var dibujo=reticula.getGraphicsContext2D();dibujo.setFill(Color.web("#0b0d0d"));
+        dibujo.fillRect(0,0,reticula.getWidth(),reticula.getHeight());dibujo.setFill(Color.web("#263030"));
+        for(int x=14;x<reticula.getWidth();x+=20)for(int y=14;y<reticula.getHeight();y+=20)dibujo.fillOval(x,y,1.2,1.2);
     }
     @FXML private void monitorear(){mostrar(Pagina.MONITOREO);}
     @FXML private void nuevoPedido(){mostrar(Pagina.PEDIDO);}
@@ -93,7 +106,7 @@ public final class VistaPrincipalController implements AutoCloseable {
     }
     private VBox envolver(Node panel){
         VBox contenedor=new VBox(panel);contenedor.getStyleClass().add("pagina");
-        if(panel instanceof Region region)region.setMaxWidth(900);
+        if(panel instanceof Region region)region.setMaxWidth(Double.MAX_VALUE);
         return contenedor;
     }
     private void activar(boolean activa){

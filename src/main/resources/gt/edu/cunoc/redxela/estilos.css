@@ -1,180 +1,148 @@
+/* Paleta común de las vistas operativas. */
 .root {
     -fx-font-family: "Inter";
     -fx-font-size: 12px;
-    -fx-base: #141416;
-    -fx-background: #0a0a0b;
-    -fx-control-inner-background: #101012;
-    -fx-text-background-color: #f4f5f7;
-    -fx-accent: #00f5ff;
-    -fx-focus-color: #00f5ff;
+    -fx-base: #101313;
+    -fx-background: #0b0d0d;
+    -fx-control-inner-background: #0c0f0f;
+    -fx-text-background-color: #e9eded;
+    -fx-accent: #00e5ed;
+    -fx-focus-color: #00cdd5;
     -fx-faint-focus-color: transparent;
 }
-.label { -fx-text-fill: #f4f5f7; }
-.lateral { -fx-background-color: #141416; -fx-padding: 24 15 16 15; -fx-border-color: transparent #29292d transparent transparent; }
-.marca-contenedor { -fx-padding: 0 8 24 8; }
-.logo { -fx-font-size: 25px; -fx-font-weight: bold; -fx-text-fill: #07191b; -fx-background-color: #00f5ff; -fx-background-radius: 9; -fx-padding: 3 9; -fx-effect: dropshadow(gaussian, #00b9c04d, 15, .2, 0, 4); }
+.label { -fx-text-fill: #e9eded; }
+.ikonli-font-icon, .icono { -fx-icon-color: #00dfe8; }
+.pagina { -fx-padding: 24; -fx-background-color: transparent; }
+.scroll-pane, .scroll-pane > .viewport { -fx-background-color: transparent; -fx-border-color: transparent; -fx-padding: 0; }
+.scroll-bar { -fx-background-color: #0c1010; -fx-pref-width: 8; -fx-pref-height: 8; }
+.scroll-bar .thumb { -fx-background-color: #293333; -fx-background-radius: 2; }
+.scroll-bar .increment-button, .scroll-bar .decrement-button { -fx-padding: 2; }
+
+/* El lateral conserva las mismas dimensiones en todos los destinos. */
+.lateral { -fx-background-color: #090b0b; -fx-padding: 24 0 16; -fx-border-color: transparent #202727 transparent transparent; }
+.marca-contenedor { -fx-padding: 0 24 28; -fx-alignment: center-left; }
 .marca, .marca-cian { -fx-font-size: 20px; -fx-font-weight: bold; }
-.marca-cian { -fx-text-fill: #00f5ff; }
-.button { -fx-cursor: hand; -fx-background-radius: 8; -fx-border-radius: 8; -fx-padding: 9 13; -fx-text-fill: #f4f5f7; -fx-background-color: #222225; -fx-border-color: #36363b; }
-.button:hover { -fx-background-color: #303036; -fx-border-color: #00bcc5; }
-.button:disabled { -fx-opacity: .4; }
-.nav { -fx-alignment: center-left; -fx-padding: 13 12; -fx-background-color: transparent; -fx-border-color: transparent; -fx-text-fill: #818896; -fx-font-size: 13px; }
-.nav:hover { -fx-background-color: #1c2024; -fx-text-fill: #d8faff; }
-.nav.seleccionado { -fx-background-color: #102d31; -fx-border-color: #09606a; -fx-text-fill: #00f5ff; }
-.grupo-nav { -fx-padding: 14 10 3 10; -fx-text-fill: #5e6879; -fx-font-size: 10px; -fx-font-weight: bold; }
-.identidad { -fx-padding: 14 12; -fx-background-color: #19191d; -fx-background-radius: 12; }
-.institucion { -fx-font-size: 11px; -fx-text-fill: #a4a8b3; }
-.barra-superior { -fx-padding: 16 24; -fx-background-color: #101012; -fx-border-color: transparent transparent #29292d transparent; }
-.titulo-ventana { -fx-font-size: 16px; -fx-font-weight: bold; }
-.estado-sesion { -fx-padding: 5 10; -fx-border-color: #29292d; -fx-border-radius: 20; -fx-font-size: 9px; }
-.control-simulacion { -fx-text-fill: #00f5ff; -fx-font-size: 15px; -fx-min-width: 35; -fx-padding: 5 10; }
-.barra-inferior { -fx-padding: 10 24; -fx-background-color: #141416; -fx-border-color: #29292d transparent transparent transparent; }
-.pagina { -fx-padding: 25; -fx-background-color: #0a0a0b; }
-.scroll-pane, .scroll-pane > .viewport { -fx-background-color: #0a0a0b; -fx-border-color: transparent; }
-.scroll-bar { -fx-background-color: #141416; }
-.scroll-bar .thumb { -fx-background-color: #34343b; -fx-background-radius: 10; }
-.tarjeta { -fx-background-color: #141416; -fx-background-radius: 15; -fx-border-radius: 15; -fx-border-color: #2b2b30; -fx-padding: 20; }
-.titulo-tarjeta { -fx-font-size: 13px; -fx-font-weight: bold; }
-.titulo-seccion { -fx-font-size: 16px; -fx-font-weight: bold; }
-.etiqueta { -fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #767f90; }
-.muted { -fx-font-size: 11px; -fx-text-fill: #8b92a2; }
-.destacado { -fx-font-size: 12px; -fx-font-weight: bold; }
-.dato-cian { -fx-text-fill: #00f5ff; -fx-font-size: 10px; }
-.dato-rojo, .error { -fx-text-fill: #ff525c; -fx-font-size: 11px; }
-.dato-amarillo { -fx-text-fill: #ffd000; -fx-font-size: 10px; }
-.exito { -fx-text-fill: #20d774; -fx-font-size: 10px; }
-.mono { -fx-font-family: "JetBrains Mono"; -fx-font-size: 10px; -fx-text-fill: #929cad; }
-.kpi { -fx-spacing: 7; -fx-pref-height: 155; -fx-min-width: 0; -fx-max-width: infinity; }
-.kpi-valor { -fx-font-size: 28px; -fx-font-weight: bold; }
-.icono-kpi { -fx-font-size: 19px; -fx-text-fill: #00f5ff; -fx-background-color: #102d31; -fx-background-radius: 10; -fx-padding: 6 12; }
-.recurso { -fx-padding: 14; -fx-spacing: 10; }
-.recurso.activo { -fx-border-color: #0b6870; -fx-effect: dropshadow(gaussian, #00f5ff16, 12, .05, 0, 0); }
-.recurso-unidad { -fx-font-family: "JetBrains Mono"; -fx-font-size: 10px; -fx-padding: 5 7; -fx-background-radius: 4; -fx-border-radius: 4; }
-.disponible { -fx-background-color: #102e32; -fx-text-fill: #00f5ff; -fx-border-color: #07565b; }
-.ocupado { -fx-background-color: #3a3210; -fx-text-fill: #ffd000; -fx-border-color: #756013; }
-.conflicto { -fx-border-color: #6a282c; -fx-background-color: #1c1012; }
-.fila-espera { -fx-padding: 7 0 7 12; -fx-border-color: transparent transparent transparent #00f5ff; -fx-border-width: 0 0 0 3; }
-.progress-bar { -fx-pref-height: 6; -fx-min-height: 6; -fx-padding: 0; }
-.progress-bar > .track { -fx-background-color: #2a2a30; -fx-background-radius: 4; -fx-background-insets: 0; }
-.progress-bar > .bar { -fx-background-color: linear-gradient(to right, #00f5ff, #00a1ff); -fx-background-radius: 4; -fx-background-insets: 0; -fx-padding: 3; }
-.stock-bajo > .bar { -fx-background-color: #ff4c58; }
-.text-field, .combo-box { -fx-background-color: #0b0b0d; -fx-border-color: #2b2b31; -fx-border-radius: 7; -fx-background-radius: 7; -fx-padding: 6 9; -fx-text-fill: #f3f4f7; -fx-prompt-text-fill: #717988; -fx-min-height: 32; }
-.text-field:focused, .combo-box:focused { -fx-border-color: #00c8d3; }
-.combo-box .list-cell { -fx-text-fill: #00d9e3; -fx-background-color: transparent; -fx-padding: 2; }
-.combo-box-popup .list-view { -fx-background-color: #1b1b20; -fx-border-color: #373740; }
-.combo-box-popup .list-cell { -fx-background-color: #1b1b20; -fx-padding: 8 10; -fx-text-fill: #d6dae2; }
-.combo-box-popup .list-cell:hover, .combo-box-popup .list-cell:selected { -fx-background-color: #123b3e; }
-.boton-primario { -fx-background-color: #00e8f3; -fx-text-fill: #001c21; -fx-font-weight: bold; -fx-border-color: #00e8f3; -fx-effect: dropshadow(gaussian, #00f5ff30, 13, .1, 0, 4); }
-.boton-primario:hover { -fx-background-color: #73f8ff; }
-.boton-secundario { -fx-background-color: #222226; -fx-border-color: #2b5155; -fx-font-size: 10px; -fx-font-weight: bold; }
-.boton-rojo { -fx-background-color: #e2202a; -fx-border-color: #e2202a; -fx-text-fill: white; -fx-font-size: 10px; -fx-font-weight: bold; }
-.boton-amarillo { -fx-background-color: #29230c; -fx-border-color: #6e5912; -fx-text-fill: #ffd000; -fx-font-size: 10px; }
-.boton-enlace { -fx-background-color: transparent; -fx-border-color: transparent; -fx-text-fill: #00f5ff; -fx-padding: 3 0; -fx-font-size: 10px; }
-.toggle-button { -fx-background-color: #17171a; -fx-text-fill: #7f8899; -fx-border-color: #2d2d33; -fx-background-radius: 6; -fx-border-radius: 6; -fx-padding: 7 10; -fx-cursor: hand; }
-.toggle-button:selected { -fx-background-color: #103237; -fx-text-fill: #00f5ff; -fx-border-color: #00e8f3; }
-.tipo-mercancia { -fx-font-size: 9px; }
-.modo-estres:selected { -fx-text-fill: #ff5963; -fx-background-color: #3b171b; -fx-border-color: #b72a35; }
-.slider .track { -fx-background-color: #303038; -fx-pref-height: 5; }
-.slider .thumb { -fx-background-color: #00f5ff; }
-.bin { -fx-min-height: 31; -fx-pref-height: 31; -fx-alignment: center; -fx-font-family: "JetBrains Mono"; -fx-font-size: 9px; -fx-background-radius: 2; -fx-border-radius: 2; -fx-cursor: hand; }
-.bin-libre { -fx-background-color: #1a1a1e; -fx-border-color: #27272e; }
-.bin-ocupada { -fx-background-color: #078b94; -fx-border-color: #00e8f3; -fx-text-fill: #d1ffff; }
-.bin-reservada { -fx-background-color: #51420a; -fx-border-color: #c69d00; -fx-text-fill: #ffdf54; }
-.producto-card { -fx-padding: 14; -fx-spacing: 10; -fx-background-color: #101012; }
-.badge { -fx-font-size: 8px; -fx-text-fill: #00d9e3; -fx-background-color: #102b30; -fx-padding: 4 6; -fx-background-radius: 3; }
-.separator .line { -fx-border-color: #2b2b31; -fx-border-width: 1 0 0 0; }
-.list-view, .table-view { -fx-background-color: #0f0f12; -fx-border-color: #292930; -fx-border-radius: 6; }
-.list-cell, .table-row-cell { -fx-background-color: #111114; -fx-text-fill: #c8ced8; -fx-padding: 7; -fx-font-size: 11px; }
-.list-cell:selected, .table-row-cell:selected { -fx-background-color: #10383d; }
-.table-cell { -fx-text-fill: #c8ced8; -fx-border-color: transparent; }
-.table-view .column-header, .table-view .filler { -fx-background-color: #202026; }
-.table-view .column-header .label { -fx-text-fill: #8f9aac; -fx-font-size: 10px; }
-.dialog-pane { -fx-background-color: #141416; -fx-padding: 15; }
-.dialog-pane .header-panel { -fx-background-color: #141416; }
-.text-area, .text-area .content { -fx-background-color: #101012; -fx-text-fill: #b7c2d0; }
-.check-box { -fx-text-fill: #a3aab8; -fx-font-size: 11px; }
-.check-box .box { -fx-background-color: #24242a; -fx-border-color: #4c5665; -fx-border-radius: 3; }
-.check-box:selected .mark { -fx-background-color: #00f5ff; }
-.tooltip { -fx-background-color: #202028; -fx-text-fill: #e1edf3; -fx-font-family: "JetBrains Mono"; -fx-font-size: 10px; }
-
-/* Estructura común y estados de los paneles. */
-.lateral { -fx-padding: 24 16 16; }
-.marca-contenedor { -fx-padding: 0 8 36; -fx-alignment: center-left; }
-.nav { -fx-font-size: 15px; -fx-graphic-text-gap: 16; -fx-padding: 14 16; -fx-min-height: 50; }
-.nav .ikonli-font-icon { -fx-icon-color: #737c8c; }
-.nav.seleccionado .ikonli-font-icon { -fx-icon-color: #00f5ff; }
-.logo { -fx-padding: 9; }
+.marca-cian { -fx-text-fill: #00e5ed; }
+.logo { -fx-background-color: #00dce9; -fx-background-radius: 14; -fx-padding: 10; -fx-effect: dropshadow(gaussian, #00dce944, 18, .15, 0, 0); }
 .logo .ikonli-font-icon { -fx-icon-color: #00232a; }
-.avatar { -fx-background-color: #103237; -fx-background-radius: 8; -fx-padding: 6; }
-.avatar .ikonli-font-icon { -fx-icon-color: #00f5ff; }
-.identidad { -fx-padding: 10 8; }
-.barra-superior { -fx-padding: 12 32; -fx-min-height: 64; }
-.titulo-ventana { -fx-font-size: 18px; }
-.pagina { -fx-padding: 32; }
-.tarjeta { -fx-padding: 24; -fx-spacing: 20; }
-.titulo-tarjeta { -fx-font-size: 15px; }
-.titulo-seccion { -fx-font-size: 18px; }
-.destacado { -fx-font-size: 13px; }
-.etiqueta { -fx-font-size: 10px; }
-.muted { -fx-font-size: 12px; }
-.kpi { -fx-pref-height: 174; -fx-spacing: 8; }
-.kpi-valor { -fx-font-size: 30px; }
-.kpi-cian { -fx-effect: dropshadow(gaussian, #00f5ff17, 16, .1, 0, 0); }
-.kpi-rojo { -fx-border-color: #68282b; }
-.ikonli-font-icon, .icono { -fx-icon-color: #00f5ff; }
-.icono-kpi { -fx-padding: 16; -fx-background-radius: 12; }
-.tinte-cian { -fx-background-color: #102e32; }
-.tinte-azul { -fx-background-color: #192234; }
-.tinte-azul .ikonli-font-icon { -fx-icon-color: #3985ff; }
-.tinte-violeta { -fx-background-color: #281e36; }
-.tinte-violeta .ikonli-font-icon { -fx-icon-color: #b45aff; }
-.tinte-rojo { -fx-background-color: #331b1e; }
-.tinte-rojo .ikonli-font-icon, .dato-rojo .ikonli-font-icon { -fx-icon-color: #ff4349; }
-.recurso { -fx-padding: 16; -fx-spacing: 10; -fx-pref-height: 112; }
-.recurso.activo { -fx-border-color: #675510; }
-.recurso.activo .destacado { -fx-text-fill: #e8ca1c; }
-.recurso .badge { -fx-font-size: 8px; }
-.simbolo-recurso { -fx-padding: 0 0 8; }
-.leyenda-cian, .leyenda-amarilla, .leyenda-libre { -fx-font-size: 10px; -fx-text-fill: #8b92a2; }
-.leyenda-cian .ikonli-font-icon { -fx-icon-color: #00f5ff; -fx-icon-size: 8; }
-.leyenda-amarilla .ikonli-font-icon { -fx-icon-color: #f7c900; -fx-icon-size: 8; }
-.leyenda-libre .ikonli-font-icon { -fx-icon-color: #34343a; -fx-icon-size: 8; }
-.estado-sesion { -fx-graphic-text-gap: 8; }
-.estado-sesion.exito .ikonli-font-icon { -fx-icon-color: #22bd68; }
-.estado-sesion.muted .ikonli-font-icon { -fx-icon-color: #7a8290; }
-.formulario-manual { -fx-spacing: 26; -fx-min-height: 690; }
-.monitor-admin { -fx-border-color: #66282b; }
-.alerta-conflicto { -fx-padding: 16; -fx-spacing: 14; -fx-background-color: #211719; -fx-border-color: #65282b; -fx-background-radius: 10; -fx-border-radius: 10; }
-.alerta-inanicion { -fx-padding: 16; -fx-spacing: 14; -fx-background-color: #231f14; -fx-border-color: #5d4d0b; -fx-background-radius: 10; -fx-border-radius: 10; }
-.badge-rojo { -fx-background-color: #f34249; -fx-text-fill: white; -fx-padding: 4 8; -fx-background-radius: 20; -fx-font-size: 10px; -fx-font-weight: bold; }
-.boton-rojo-contorno { -fx-background-color: transparent; -fx-text-fill: #ff4349; -fx-border-color: #69282b; -fx-font-size: 10px; }
-.tipo-mercancia { -fx-font-size: 10px; -fx-pref-height: 33; }
-.boton-primario { -fx-min-height: 40; }
-.boton-rojo, .boton-secundario { -fx-font-size: 11px; }
-.catalogo-panel { -fx-padding: 0 0 12 24; -fx-border-color: transparent transparent transparent #29292d; }
-.producto-card { -fx-padding: 16; -fx-spacing: 14; }
-.categoria-electronica { -fx-text-fill: #3985ff; -fx-background-color: #162132; }
-.categoria-pesada { -fx-text-fill: #ff8c18; -fx-background-color: #332113; }
-.categoria-voluminosa { -fx-text-fill: #1ac66c; -fx-background-color: #142d20; }
-.nivel-pedido { -fx-padding: 15 10; -fx-background-color: #103237; -fx-border-color: #08636b; -fx-border-radius: 10; -fx-background-radius: 10; -fx-text-fill: #00f5ff; }
-.politica { -fx-font-size: 9px; -fx-padding: 3; }
-.barra-inferior { -fx-padding: 16 32; }
-.recurso .destacado { -fx-font-size: 11px; }
-.recurso .muted { -fx-font-size: 10px; }
-.recurso .badge { -fx-font-size: 7px; -fx-padding: 3 5; }
-.recurso .ikonli-font-icon { -fx-icon-size: 18; }
-.progress-indicator { -fx-progress-color: #00f5ff; }
-.formulario-manual .titulo-tarjeta .ikonli-font-icon { -fx-icon-color: #00f5ff; }
-.monitor-admin .titulo-tarjeta .ikonli-font-icon { -fx-icon-color: #ff4349; }
+.button { -fx-cursor: hand; -fx-background-color: #1b2020; -fx-border-color: #252e2e; -fx-background-radius: 4; -fx-border-radius: 4; -fx-padding: 8 14; -fx-text-fill: #dce3e3; }
+.button:hover { -fx-background-color: #242c2c; -fx-border-color: #3a5555; }
+.button:disabled { -fx-opacity: .38; }
+.nav { -fx-alignment: center-left; -fx-graphic-text-gap: 16; -fx-font-size: 13px; -fx-min-height: 42; -fx-padding: 10 24; -fx-background-color: transparent; -fx-background-radius: 0; -fx-border-radius: 0; -fx-border-width: 0 0 0 2; -fx-border-color: transparent; -fx-text-fill: #7d898e; }
+.nav .ikonli-font-icon { -fx-icon-color: #738086; -fx-icon-size: 16; }
+.nav:hover, .nav:focused { -fx-background-color: #101818; -fx-border-color: transparent; -fx-text-fill: #c5d8d8; }
+.nav.seleccionado, .nav.seleccionado:focused { -fx-background-color: linear-gradient(to right, #0b2526, #0a1010); -fx-border-color: transparent transparent transparent #00e5ed; -fx-text-fill: #00e5ed; -fx-font-weight: bold; }
+.nav.seleccionado .ikonli-font-icon { -fx-icon-color: #00e5ed; }
+.submenu { -fx-padding: 0 20 6 46; }
+.subnav { -fx-min-height: 24; -fx-padding: 4 8; -fx-font-size: 11px; }
+.subnav.seleccionado, .subnav.seleccionado:focused { -fx-background-color: transparent; -fx-border-color: transparent; }
+.identidad { -fx-padding: 10 12; -fx-background-color: #0e1111; -fx-border-color: #202727; -fx-border-radius: 8; -fx-background-radius: 8; }
+.avatar { -fx-padding: 4; -fx-background-color: #102627; -fx-background-radius: 5; }
+.avatar .ikonli-font-icon { -fx-icon-color: #00dfe8; -fx-icon-size: 20; }
+.barra-superior { -fx-min-height: 56; -fx-padding: 10 32; -fx-background-color: #111414; -fx-border-color: transparent transparent #222929 transparent; }
+.titulo-ventana { -fx-font-size: 14px; -fx-font-weight: bold; }
+.estado-sesion { -fx-font-family: "JetBrains Mono"; -fx-font-size: 9px; -fx-padding: 4 8; -fx-graphic-text-gap: 7; -fx-border-color: #243030; -fx-border-radius: 3; }
+.estado-sesion.exito .ikonli-font-icon { -fx-icon-color: #22c876; }
+.estado-sesion.muted .ikonli-font-icon { -fx-icon-color: #738086; }
+.control-simulacion { -fx-min-width: 32; -fx-padding: 8; -fx-background-color: #1a2020; -fx-border-color: transparent; }
+.control-simulacion .ikonli-font-icon { -fx-icon-size: 14; }
+.control-simulacion:hover { -fx-background-color: #0e3335; }
+.barra-inferior { -fx-padding: 12 32; -fx-background-color: #0a0d0d; -fx-border-color: #202727 transparent transparent transparent; }
 
-/* Las secciones y sus submenús conservan su posición al navegar. */
-.lateral .marca-contenedor { -fx-padding: 0 8 18; }
-.lateral .nav { -fx-min-height: 40; -fx-padding: 10 16; }
-.submenu { -fx-padding: 0 0 2 44; }
-.lateral .subnav { -fx-min-height: 26; -fx-padding: 5 8; -fx-font-size: 12px; -fx-background-radius: 0; -fx-border-radius: 0; }
-.lateral .subnav.seleccionado { -fx-background-color: transparent; -fx-border-color: transparent transparent transparent #00cbd5; -fx-border-width: 0 0 0 2; }
-.nav:focused { -fx-background-insets: 0; -fx-border-color: transparent; }
-.nav.seleccionado:focused { -fx-border-color: #09606a; }
-.subnav.seleccionado:focused { -fx-border-color: transparent transparent transparent #00cbd5; }
-.formulario-pedido { -fx-spacing: 22; }
-.lateral .subnav { -fx-border-width: 0 0 0 2; }
+/* Secciones planas y tipografía de datos. */
+.tarjeta { -fx-background-color: transparent; -fx-background-radius: 0; -fx-border-radius: 0; -fx-border-color: transparent transparent #202929 transparent; -fx-border-width: 0 0 1 0; -fx-padding: 16; -fx-spacing: 16; }
+.titulo-tarjeta, .titulo-seccion { -fx-font-size: 12px; -fx-font-weight: bold; }
+.titulo-tarjeta .ikonli-font-icon, .titulo-seccion .ikonli-font-icon { -fx-icon-size: 14; }
+.etiqueta { -fx-font-size: 10px; -fx-text-fill: #75858c; -fx-font-weight: bold; }
+.muted { -fx-font-size: 11px; -fx-text-fill: #829197; }
+.destacado { -fx-font-size: 12px; -fx-font-weight: bold; }
+.dato-cian { -fx-text-fill: #00dfe8; -fx-font-size: 10px; }
+.dato-rojo, .error { -fx-text-fill: #ff414b; -fx-font-size: 11px; }
+.dato-amarillo { -fx-text-fill: #e9b83f; -fx-font-size: 10px; }
+.exito { -fx-text-fill: #23d581; -fx-font-size: 10px; }
+.mono { -fx-font-family: "JetBrains Mono"; -fx-font-size: 11px; -fx-text-fill: #8b9da3; }
+.kpi { -fx-pref-height: 112; -fx-padding: 12 16; -fx-spacing: 8; -fx-min-width: 0; -fx-max-width: infinity; }
+.kpi-valor { -fx-font-family: "JetBrains Mono"; -fx-font-size: 25px; -fx-font-weight: normal; }
+.kpi-cian { -fx-border-color: transparent transparent #00aeb8 transparent; }
+.kpi-rojo { -fx-background-color: #9e27300d; -fx-border-color: transparent transparent #54242a transparent; }
+.icono-kpi { -fx-padding: 0; -fx-background-color: transparent; }
+.icono-kpi .ikonli-font-icon { -fx-icon-size: 12; }
+.tinte-azul .ikonli-font-icon { -fx-icon-color: #438cff; }
+.tinte-violeta .ikonli-font-icon { -fx-icon-color: #b075ff; }
+.tinte-rojo .ikonli-font-icon, .dato-rojo .ikonli-font-icon { -fx-icon-color: #ff414b; }
+.recurso { -fx-pref-height: 80; -fx-padding: 10 12; -fx-spacing: 6; -fx-background-color: #00c8d00b; -fx-border-color: transparent; -fx-border-width: 0 0 1 0; }
+.recurso .destacado { -fx-font-family: "JetBrains Mono"; -fx-font-size: 10px; -fx-text-fill: #00dfe8; }
+.recurso .muted { -fx-font-size: 10px; }
+.recurso .badge { -fx-background-color: transparent; -fx-padding: 0; -fx-font-size: 8px; }
+.recurso .ikonli-font-icon { -fx-icon-size: 12; }
+.recurso.activo { -fx-background-color: #d67c1c0e; -fx-border-color: transparent transparent #6a421c transparent; }
+.recurso.activo .destacado, .recurso.activo .badge { -fx-text-fill: #ff9e40; }
+.recurso.activo .ikonli-font-icon { -fx-icon-color: #ff9e40; }
+.recurso-escaner { -fx-background-color: #9c58d60d; }
+.recurso-escaner .destacado, .recurso-escaner .ikonli-font-icon { -fx-text-fill: #bc8af1; -fx-icon-color: #bc8af1; }
+.leyenda-cian, .leyenda-amarilla, .leyenda-libre { -fx-font-size: 9px; -fx-text-fill: #73858d; }
+.leyenda-cian .ikonli-font-icon { -fx-icon-color: #00dfe8; -fx-icon-size: 7; }
+.leyenda-amarilla .ikonli-font-icon { -fx-icon-color: #ff9e40; -fx-icon-size: 7; }
+.leyenda-libre .ikonli-font-icon { -fx-icon-color: #3d4b4f; -fx-icon-size: 7; }
+.nivel-pedido { -fx-padding: 4 7; -fx-background-color: #0c2d30; -fx-background-radius: 2; -fx-text-fill: #00dfe8; -fx-font-family: "JetBrains Mono"; -fx-font-size: 10px; }
+.fila-proceso { -fx-padding: 10 0; -fx-border-color: transparent transparent #202929 transparent; -fx-border-width: 0 0 1 0; }
+.fila-espera { -fx-padding: 10 0 10 10; -fx-border-color: transparent transparent #202929 #00aeb8; -fx-border-width: 0 0 1 2; }
+.conflicto { -fx-background-color: #a62d3310; -fx-border-color: transparent transparent #4d2227 transparent; }
+.monitor-admin { -fx-padding: 0; -fx-border-color: transparent; }
+.monitor-admin .titulo-tarjeta .ikonli-font-icon { -fx-icon-color: #ff414b; }
+.alerta-conflicto { -fx-background-color: #b3363e0c; -fx-border-color: transparent transparent transparent #782d34; -fx-border-width: 0 0 0 2; -fx-padding: 20; }
+.alerta-inanicion { -fx-background-color: #dca52308; -fx-border-color: transparent transparent transparent #6c531f; -fx-border-width: 0 0 0 2; -fx-padding: 20; }
+.badge, .badge-rojo { -fx-font-size: 9px; -fx-padding: 3 6; -fx-background-radius: 2; -fx-text-fill: #00dfe8; -fx-background-color: #0a292b; }
+.badge-rojo { -fx-background-color: #331719; -fx-text-fill: #ff414b; }
+.categoria-electronica { -fx-text-fill: #438cff; -fx-background-color: #142033; }
+.categoria-pesada { -fx-text-fill: #ff9e40; -fx-background-color: #302114; }
+.categoria-voluminosa { -fx-text-fill: #23d581; -fx-background-color: #11291d; }
+.catalogo-panel { -fx-padding: 0 0 0 24; -fx-border-color: transparent transparent transparent #202929; -fx-border-width: 0 0 0 1; }
+.producto-card { -fx-padding: 16 0; -fx-spacing: 12; }
+.bin { -fx-min-height: 30; -fx-pref-height: 30; -fx-alignment: center; -fx-background-radius: 1; -fx-border-radius: 1; -fx-cursor: hand; }
+.bin-libre { -fx-background-color: #141a1a; -fx-border-color: #252f2f; }
+.bin-ocupada { -fx-background-color: #0a4449; -fx-border-color: #007f89; }
+.bin-reservada { -fx-background-color: #3c2e13; -fx-border-color: #8c6b22; }
+
+/* Controles y tablas con superficies discretas. */
+.text-field, .combo-box { -fx-background-color: #0b0e0e; -fx-border-color: #252e2e; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 6 10; -fx-min-height: 32; -fx-text-fill: #dce3e3; -fx-prompt-text-fill: #73838a; }
+.text-field:focused, .combo-box:focused { -fx-border-color: #00aeb8; }
+.combo-box .list-cell { -fx-text-fill: #00dfe8; -fx-background-color: transparent; -fx-padding: 2; -fx-font-size: 11px; }
+.combo-box-popup .list-view { -fx-background-color: #101717; -fx-border-color: #294040; }
+.combo-box-popup .list-cell { -fx-background-color: #101717; -fx-text-fill: #dce3e3; -fx-padding: 8 10; }
+.combo-box-popup .list-cell:hover, .combo-box-popup .list-cell:selected { -fx-background-color: #103033; }
+.toggle-button { -fx-background-color: #101515; -fx-text-fill: #73838a; -fx-border-color: #253030; -fx-background-radius: 4; -fx-border-radius: 4; -fx-padding: 7 12; -fx-font-size: 10px; -fx-cursor: hand; }
+.toggle-button:selected { -fx-background-color: #0b2a2c; -fx-text-fill: #00dfe8; -fx-border-color: #155359; }
+.boton-primario { -fx-background-color: #00dfe8; -fx-border-color: #00dfe8; -fx-text-fill: #001c20; -fx-font-weight: bold; -fx-min-height: 34; }
+.boton-primario:hover { -fx-background-color: #56eef3; -fx-border-color: #56eef3; }
+.boton-secundario { -fx-background-color: #1b2020; -fx-border-color: #252e2e; -fx-font-size: 11px; }
+.boton-rojo { -fx-background-color: #e3202b; -fx-border-color: #e3202b; -fx-text-fill: white; -fx-font-size: 11px; -fx-font-weight: bold; }
+.boton-rojo-contorno { -fx-background-color: #1b2020; -fx-border-color: #48262b; -fx-text-fill: #f15b64; -fx-font-size: 11px; }
+.boton-amarillo { -fx-background-color: #241e11; -fx-border-color: #59461d; -fx-text-fill: #e9b83f; -fx-font-size: 10px; }
+.boton-enlace { -fx-background-color: transparent; -fx-border-color: #202929; -fx-text-fill: #00dfe8; -fx-font-size: 10px; }
+.politica { -fx-font-size: 9px; -fx-padding: 3 6; }
+.progress-bar { -fx-pref-height: 4; -fx-min-height: 4; -fx-padding: 0; }
+.progress-bar > .track { -fx-background-color: #202a2c; -fx-background-radius: 0; -fx-background-insets: 0; }
+.progress-bar > .bar { -fx-background-color: #00dfe8; -fx-background-radius: 0; -fx-background-insets: 0; -fx-padding: 2; }
+.stock-bajo > .bar { -fx-background-color: #ff414b; }
+.progress-indicator { -fx-progress-color: #00dfe8; }
+.slider .track { -fx-background-color: #253030; -fx-pref-height: 3; }
+.slider .thumb { -fx-background-color: #00dfe8; }
+.list-view, .table-view { -fx-background-color: transparent; -fx-border-color: #202929 transparent transparent transparent; -fx-border-radius: 0; -fx-padding: 0; }
+.table-view .virtual-flow, .table-view .clipped-container, .table-view .sheet { -fx-background-color: transparent; }
+.table-view .column-header-background, .table-view .column-header, .table-view .filler { -fx-background-color: #0c1010; }
+.table-view .column-header { -fx-border-color: transparent transparent #253030 transparent; -fx-border-width: 0 0 1 0; -fx-pref-height: 36; }
+.table-view .column-header .label { -fx-text-fill: #829197; -fx-font-size: 10px; -fx-alignment: center-left; -fx-padding: 0 8; }
+.list-cell, .table-row-cell { -fx-background-color: transparent; -fx-text-fill: #c6d0d0; -fx-font-size: 11px; -fx-padding: 0; }
+.table-row-cell { -fx-cell-size: 38; }
+.table-cell { -fx-text-fill: #c6d0d0; -fx-border-color: transparent transparent #202929 transparent; -fx-border-width: 0 0 1 0; -fx-padding: 10 8; }
+.table-row-cell:empty .table-cell { -fx-border-color: transparent; }
+.list-cell:selected, .table-row-cell:selected { -fx-background-color: #0d2a2c; }
+.table-row-cell:selected .table-cell { -fx-text-fill: #d5ffff; }
+.separator .line { -fx-border-color: #202929; -fx-border-width: 1 0 0 0; }
+.text-area { -fx-background-color: #050808; -fx-border-color: #202929; -fx-border-radius: 0; -fx-padding: 8; }
+.text-area .content { -fx-background-color: #050808; }
+.text-area .text { -fx-fill: #8b9da3; }
+.text-area, .text-area .content { -fx-text-fill: #8b9da3; }
+.dialog-pane, .dialog-pane .header-panel { -fx-background-color: #101515; }
+.tooltip { -fx-background-color: #142020; -fx-text-fill: #dce3e3; -fx-font-family: "JetBrains Mono"; -fx-font-size: 10px; }

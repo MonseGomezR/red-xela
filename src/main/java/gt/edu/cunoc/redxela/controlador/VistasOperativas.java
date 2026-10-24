@@ -31,7 +31,8 @@ final class VistasOperativas {
         ciclo.getStyleClass().add("alerta-conflicto");
         aumentar=boton("AUMENTAR PRIORIDAD MANUALMENTE","boton-amarillo",this::priorizar); aumentar.setMaxWidth(Double.MAX_VALUE);
         VBox inanicion=tarjeta(tituloEspera,alertaEspera,aumentar); inanicion.getStyleClass().add("alerta-inanicion");
-        conflictos=tarjeta(fila(tituloIcono(Feather.LINK_2,"MONITOR DE DEADLOCKS","titulo-tarjeta"),espacio(),cuentaConflictos),ciclo,inanicion);
+        conflictos=tarjeta(fila(tituloIcono(Feather.LINK_2,"MONITOR DE DEADLOCKS","titulo-tarjeta"),espacio(),cuentaConflictos),
+                columnas(ciclo,inanicion,50,850));
         conflictos.getStyleClass().add("monitor-admin");
         recibido.getItems().setAll(CatalogoProductos.getProductos()); recibido.getSelectionModel().selectFirst(); recibido.setMaxWidth(Double.MAX_VALUE);
         recibido.setConverter(new StringConverter<>() {

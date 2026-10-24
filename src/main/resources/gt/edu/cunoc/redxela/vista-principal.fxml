@@ -2,6 +2,8 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.geometry.Insets?>
 <BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gt.edu.cunoc.redxela.controlador.VistaPrincipalController" stylesheets="@estilos.css">
  <left><VBox prefWidth="256" minWidth="256" maxWidth="256" spacing="6" styleClass="lateral">
   <HBox spacing="12" alignment="CENTER_LEFT" styleClass="marca-contenedor">
@@ -26,7 +28,7 @@
    <Button fx:id="subDepurar" text="Depuración" onAction="#depurar" maxWidth="Infinity" styleClass="nav,subnav"/>
   </VBox>
   <Region VBox.vgrow="ALWAYS"/>
-  <HBox spacing="12" alignment="CENTER_LEFT" styleClass="identidad"><Label styleClass="avatar"><graphic><FontIcon iconLiteral="fth-user" iconSize="26"/></graphic></Label><VBox spacing="4"><Label text="Sesión local" styleClass="destacado"/><Label text="SIMULADOR" styleClass="etiqueta"/></VBox></HBox>
+  <HBox spacing="12" alignment="CENTER_LEFT" styleClass="identidad"><VBox.margin><Insets left="24" right="24"/></VBox.margin><Label styleClass="avatar"><graphic><FontIcon iconLiteral="fth-user" iconSize="26"/></graphic></Label><VBox spacing="4"><Label text="Sesión local" styleClass="destacado"/><Label text="SIMULADOR" styleClass="etiqueta"/></VBox></HBox>
  </VBox></left>
  <center><BorderPane>
   <top><HBox alignment="CENTER_LEFT" spacing="20" styleClass="barra-superior">
@@ -42,7 +44,7 @@
    <HBox fx:id="controlesInventario" spacing="12" alignment="CENTER_LEFT"/>
    <HBox fx:id="controlesAdmin" spacing="0" alignment="CENTER_LEFT"><Label text="Simulación:   " styleClass="muted"/><ToggleButton fx:id="estandar" text="ESTÁNDAR" onAction="#modoEstandar"/><ToggleButton fx:id="estres" text="STRESS TEST" onAction="#modoEstres"/></HBox>
   </HBox></top>
-  <center><ScrollPane fx:id="contenido" fitToWidth="true" hbarPolicy="NEVER" pannable="true"/></center>
+  <center><StackPane fx:id="superficie"><Canvas fx:id="reticula" mouseTransparent="true"/><ScrollPane fx:id="contenido" fitToWidth="true" hbarPolicy="NEVER" pannable="true"/></StackPane></center>
   <bottom><HBox alignment="CENTER_LEFT" spacing="12" styleClass="barra-inferior">
    <Label fx:id="pie" text="CAPACIDAD ALMACÉN:" styleClass="etiqueta"/><ProgressBar fx:id="barraCapacidad" prefWidth="92"/><Label fx:id="capacidad" styleClass="dato-cian"/>
    <Label fx:id="entorno" styleClass="etiqueta"/><Label fx:id="aviso" styleClass="muted"/><Region HBox.hgrow="ALWAYS"/>

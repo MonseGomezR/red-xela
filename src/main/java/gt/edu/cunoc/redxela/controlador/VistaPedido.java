@@ -30,7 +30,8 @@ final class VistaPedido extends VBox {
         detalles.getColumns().add(columna("Producto",d->d.producto().nombre(),350));
         detalles.getColumns().add(columna("Tipo de mercancía",d->d.producto().tipoMercancia().toString(),210));
         detalles.getColumns().add(columna("Unidades",d->Integer.toString(d.cantidad()),100));
-        detalles.setPrefHeight(200);detalles.setPlaceholder(texto("Agrega los productos del pedido.","muted"));
+        detalles.setPrefHeight(180);detalles.setPlaceholder(texto("Agrega los productos del pedido.","muted"));
+        detalles.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         detalles.getSelectionModel().selectedItemProperty().addListener((o,a,b)->{
             if(b!=null){producto.setValue(b.producto());cantidad.setText(Integer.toString(b.cantidad()));}
         });
@@ -42,7 +43,7 @@ final class VistaPedido extends VBox {
                 new VBox(8,texto("SERVICIO CONTRATADO","etiqueta"),servicio),
                 new VBox(8,texto("PRODUCTO Y CANTIDAD","etiqueta"),seleccion,existencias),
                 detalles,fila(quitar,espacio(),total),enviar,aviso);
-        formulario.setMaxWidth(900);getChildren().add(formulario);actualizar();
+        formulario.getStyleClass().add("formulario-pedido");formulario.setMaxWidth(Double.MAX_VALUE);getChildren().add(formulario);actualizar();
     }
     private void guardarProducto(){
         try{

@@ -18,14 +18,12 @@ public final class ContextoCentro implements AutoCloseable {
     private final List<Cliente> automaticos = new ArrayList<>();
     private volatile boolean automatico = true, estres, cerrado;
     private double siguiente = 3;
-    private int secuenciaManual = 9901;
+    private int secuenciaManual = 1;
     private final Map<UUID, String> identificadores = new HashMap<>();
 
     public ContextoCentro() {
         for (NivelServicio nivel : NivelServicio.values()) automaticos.add(clientes.registrar(
                 "Cliente de simulación N" + nivel.getPrioridad(), "nivel" + nivel.getPrioridad() + "@redxela.local", nivel));
-        // Stock inicial real: tres ubicaciones por producto. Se consume durante la simulación.
-        CatalogoProductos.getProductos().forEach(p -> almacen.recibir(p, 60));
         generador.scheduleWithFixedDelay(this::generar, 100, 100, TimeUnit.MILLISECONDS);
     }
     public synchronized Pedido registrar(UUID cliente, List<DetallePedido> detalles) {
@@ -35,7 +33,10 @@ public final class ContextoCentro implements AutoCloseable {
         return pedido;
     }
     public void automatico(boolean valor) { automatico = valor; }
-    public synchronized String siguienteIdManual() { return "MAN-" + secuenciaManual; }
+    public synchronized String siguienteIdManual() {
+        while (identificadores.containsValue("MAN-" + secuenciaManual)) secuenciaManual++;
+        return "MAN-" + secuenciaManual;
+    }
     public synchronized String identificador(Pedido pedido) {
         return identificadores.getOrDefault(pedido.id(), "P-" + pedido.id().toString().substring(0, 8).toUpperCase(Locale.ROOT));
     }

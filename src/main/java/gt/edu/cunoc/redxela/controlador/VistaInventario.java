@@ -72,14 +72,14 @@ final class VistaInventario extends VBox {
         for(var producto:CatalogoProductos.getProductos()) {
             if(!(producto.codigo()+" "+producto.nombre()+" "+producto.tipoMercancia()).toLowerCase(Locale.ROOT).contains(filtro))continue;
             int stock=centro.almacen.stock(producto), disponible=centro.almacen.disponible(producto);
-            int minimo=producto.tipoMercancia()==gt.edu.cunoc.redxela.modelo.TipoMercancia.VOLUMINOSA?2:20;
-            ProgressBar nivel=new ProgressBar(Math.min(1,stock/Math.max(60.0,minimo*8))); nivel.setMaxWidth(Double.MAX_VALUE);
-            if(disponible<minimo)nivel.getStyleClass().add("stock-bajo");
+            ProgressBar nivel=new ProgressBar(stock==0?0:(double)disponible/stock); nivel.setMaxWidth(Double.MAX_VALUE);
+            nivel.setTooltip(new Tooltip("Proporción de existencias disponibles, sin reservar."));
+            if(disponible==0)nivel.getStyleClass().add("stock-bajo");
             Label categoria=texto(producto.tipoMercancia().toString(),"badge");
             categoria.getStyleClass().add("categoria-"+producto.tipoMercancia().name().toLowerCase(Locale.ROOT));
             VBox card=tarjeta(fila(parrafo(producto.nombre(),"destacado"),espacio(),categoria),
                     fila(texto("Stock actual: "+stock+"u","muted"),espacio(),
-                            texto(disponible<minimo?"STOCK BAJO":"Mínimo: "+minimo+"u",disponible<minimo?"dato-rojo":"muted")),nivel);
+                            texto("Disponible: "+disponible+"u",disponible==0?"dato-rojo":"muted")),nivel);
             card.getStyleClass().add("producto-card"); catalogo.getChildren().add(card);
         }
         if(catalogo.getChildren().isEmpty())catalogo.getChildren().add(texto("No hay productos que coincidan.","muted"));

@@ -14,7 +14,8 @@ final class VistaMonitoreo extends VBox {
     private final ContextoCentro centro;
     private final Label completados=texto("0","kpi-valor"), espera=texto("0.0m","kpi-valor"),
             ocupados=texto("0/26","kpi-valor"), deadlocks=texto("00","kpi-valor"), media=texto("0%","dato-cian"),
-            mensajeConflicto=parrafo("","muted"), totalActivos=texto("0 pedidos activos","muted");
+            mensajeConflicto=parrafo("","muted"), totalActivos=texto("0 pedidos activos","muted"),
+            tituloConflicto=tituloIcono(Feather.ALERT_CIRCLE,"MONITOR DE DEADLOCKS","dato-rojo");
     private final VBox activos=new VBox(18), cola=new VBox(20);
     private final List<RecursoVisual> recursos=new ArrayList<>();
     private final Button verTodos;
@@ -59,7 +60,7 @@ final class VistaMonitoreo extends VBox {
         Region relleno=new Region();VBox.setVgrow(relleno,Priority.ALWAYS);
         VBox lista=tarjeta(fila(parrafo("LISTA DE ESPERA","titulo-tarjeta"),espacio(),politica),new Separator(),cola,relleno,new Separator(),verTodos);lista.setMinHeight(410);
         Button resolver=boton("Resolver Manualmente","boton-rojo",administrar);resolver.setMaxWidth(Double.MAX_VALUE);
-        VBox conflicto=tarjeta(tituloIcono(Feather.ALERT_CIRCLE,"DEADLOCK DETECTADO","dato-rojo"),mensajeConflicto,resolver);conflicto.getStyleClass().add("conflicto");
+        VBox conflicto=tarjeta(tituloConflicto,mensajeConflicto,resolver);conflicto.getStyleClass().add("conflicto");
         VBox izquierda=new VBox(24,fila(tituloIcono(Feather.CPU,"Estado de Recursos Compartidos","titulo-seccion"),espacio(),
                 tituloIcono(Feather.CIRCLE,"DISPONIBLE","leyenda-cian"),tituloIcono(Feather.CIRCLE,"OCUPADO","leyenda-amarilla")),estados,
                 tarjeta(fila(parrafo("PEDIDOS EN PROCESAMIENTO ACTIVO","titulo-tarjeta"),espacio(),totalActivos),new Separator(),activos));
@@ -94,6 +95,7 @@ final class VistaMonitoreo extends VBox {
         var stats=centro.motor.estadisticas();completados.setText(Integer.toString(stats.completados()));espera.setText("%.1fm".formatted(stats.esperaMedia()));
         ocupados.setText(stats.recursosEnUso()+"/"+stats.recursosTotales());media.setText("%.0f%%".formatted(100.0*stats.recursosEnUso()/stats.recursosTotales()));
         var conflicto=centro.conflictos.vista();deadlocks.setText(conflicto.activo()?"01":"00");
+        tituloConflicto.setText(conflicto.activo()?"DEADLOCK DETECTADO":"MONITOR DE DEADLOCKS");
         mensajeConflicto.setText(conflicto.activo()?"DL-A necesita Escáner compartido (retenido por DL-B).\n\nDL-B necesita Montacargas 1 (retenido por DL-A).":conflicto.mensaje());
         var estados=centro.recursos.estados();var pedidos=centro.motor.pedidos();
         Map<String,MotorSimulacion.VistaPedido> porTitular=new HashMap<>();

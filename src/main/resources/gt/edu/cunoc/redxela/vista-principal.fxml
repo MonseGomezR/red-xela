@@ -20,7 +20,7 @@
   <VBox fx:id="menuInventario" spacing="8"><Label text="GESTIÓN" styleClass="grupo-nav"/><Button text="Recepción de Carga" onAction="#recepcionar" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-truck" iconSize="19"/></graphic></Button></VBox>
   <VBox fx:id="menuAdmin" spacing="8"><Label text="HERRAMIENTAS" styleClass="grupo-nav"/><Button text="Modo Depuración" onAction="#depurar" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-code" iconSize="19"/></graphic></Button></VBox>
   <Region VBox.vgrow="ALWAYS"/>
-  <HBox spacing="12" alignment="CENTER_LEFT" styleClass="identidad"><Label styleClass="avatar"><graphic><FontIcon iconLiteral="fth-user" iconSize="26"/></graphic></Label><VBox spacing="4"><Label text="Ing. Otto Soto" styleClass="destacado"/><Label text="ADMINISTRADOR" styleClass="etiqueta"/></VBox></HBox>
+  <HBox spacing="12" alignment="CENTER_LEFT" styleClass="identidad"><Label styleClass="avatar"><graphic><FontIcon iconLiteral="fth-user" iconSize="26"/></graphic></Label><VBox spacing="4"><Label text="Sesión local" styleClass="destacado"/><Label text="SIMULADOR" styleClass="etiqueta"/></VBox></HBox>
  </VBox></left>
  <center><BorderPane>
   <top><HBox alignment="CENTER_LEFT" spacing="20" styleClass="barra-superior">
@@ -40,7 +40,7 @@
   <bottom><HBox alignment="CENTER_LEFT" spacing="12" styleClass="barra-inferior">
    <Label fx:id="pie" text="CAPACIDAD ALMACÉN:" styleClass="etiqueta"/><ProgressBar fx:id="barraCapacidad" prefWidth="92"/><Label fx:id="capacidad" styleClass="dato-cian"/>
    <Label fx:id="entorno" styleClass="etiqueta"/><Label fx:id="aviso" styleClass="muted"/><Region HBox.hgrow="ALWAYS"/>
-   <Label text="USAC · SISTEMAS OPERATIVOS 2" styleClass="dato-cian"/><Label text="2026" styleClass="etiqueta"/>
+   <Label text="USAC · SISTEMAS OPERATIVOS 2" styleClass="dato-cian"/>
   </HBox></bottom>
  </BorderPane></center>
 </BorderPane>

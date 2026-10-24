@@ -12,14 +12,15 @@ import static gt.edu.cunoc.redxela.controlador.Componentes.*;
 
 final class VistaAdministracion extends VBox {
     private final ContextoCentro centro;
-    private final TextField id=new TextField(), cliente=new TextField(), lote=new TextField("50");
+    private final TextField id=new TextField(), cliente=new TextField(), lote=new TextField();
     private final ComboBox<NivelServicio> servicio=new ComboBox<>();
     private final ComboBox<Producto> recibido=new ComboBox<>();
     private final ComboBox<Integer> muelle=new ComboBox<>();
-    private final Slider cantidad=new Slider(1,100,12);
+    private final Slider cantidad=new Slider(1,100,1);
     private final ToggleGroup tipos=new ToggleGroup();
     private final Label mensajePedido=parrafo("","muted"), mensajeEntrada=parrafo("","muted"),
-            conflicto=parrafo("","muted"), alertaEspera=parrafo("","muted"), cuentaConflictos=texto("0 ACTIVOS","badge-rojo");
+            conflicto=parrafo("","muted"), alertaEspera=parrafo("","muted"), cuentaConflictos=texto("0 ACTIVOS","badge-rojo"),
+            tituloEspera=texto("TIEMPOS DE ESPERA","dato-amarillo"), tituloCiclo=texto("ESTADO DE CONFLICTOS","dato-rojo");
     private final Button terminarA, terminarB, aumentar;
     private UUID ultimaEntrada;
 
@@ -42,7 +43,8 @@ final class VistaAdministracion extends VBox {
             mercancias.getChildren().add(b); if(i==0)b.setSelected(true);
         }
         cantidad.setBlockIncrement(1); cantidad.setMajorTickUnit(1); cantidad.setSnapToTicks(true);
-        Label unidades=texto("12u","dato-cian"); cantidad.valueProperty().addListener((o,a,b)->unidades.setText(Math.round(b.doubleValue())+"u"));
+        lote.setPromptText("Cantidad a recibir");
+        Label unidades=texto("1u","dato-cian"); cantidad.valueProperty().addListener((o,a,b)->unidades.setText(Math.round(b.doubleValue())+"u"));
         Button inyectar=boton("INYECTAR PEDIDO AL SISTEMA","boton-primario",this::inyectar); inyectar.setMaxWidth(Double.MAX_VALUE);
         VBox manual=tarjeta(tituloIcono(Feather.SHOPPING_CART,"CREAR PEDIDO MANUAL","titulo-tarjeta"),new Separator(),
                 cabecera,campo("CLIENTE / CUENTA",cliente),campo("TIPO DE MERCANCÍA",mercancias),
@@ -50,10 +52,10 @@ final class VistaAdministracion extends VBox {
         manual.getStyleClass().add("formulario-manual");
         terminarA=boton("TERMINAR DL-A","boton-rojo",()->resolver(false));
         terminarB=boton("TERMINAR DL-B","boton-rojo-contorno",()->resolver(true));
-        VBox ciclo=tarjeta(texto("ESPERA CIRCULAR · DL-A / DL-B","dato-rojo"),conflicto,campos(terminarA,terminarB));
+        VBox ciclo=tarjeta(tituloCiclo,conflicto,campos(terminarA,terminarB));
         ciclo.getStyleClass().add("alerta-conflicto");
         aumentar=boton("AUMENTAR PRIORIDAD MANUALMENTE","boton-amarillo",this::priorizar); aumentar.setMaxWidth(Double.MAX_VALUE);
-        VBox inanicion=tarjeta(texto("INANICIÓN DETECTADA","dato-amarillo"),alertaEspera,aumentar); inanicion.getStyleClass().add("alerta-inanicion");
+        VBox inanicion=tarjeta(tituloEspera,alertaEspera,aumentar); inanicion.getStyleClass().add("alerta-inanicion");
         VBox monitor=tarjeta(fila(tituloIcono(Feather.LINK_2,"MONITOR DE DEADLOCKS","titulo-tarjeta"),espacio(),cuentaConflictos),ciclo,inanicion);
         monitor.getStyleClass().add("monitor-admin");
         recibido.getItems().setAll(CatalogoProductos.getProductos()); recibido.getSelectionModel().selectFirst(); recibido.setMaxWidth(Double.MAX_VALUE);
@@ -103,9 +105,11 @@ final class VistaAdministracion extends VBox {
     private void priorizar() { demorado().ifPresent(p->centro.motor.priorizar(p.pedido().id())); actualizar(); }
     void actualizar() {
         var vista=centro.conflictos.vista(); cuentaConflictos.setText(vista.activo()?"1 ACTIVO":"0 ACTIVOS");
+        tituloCiclo.setText(vista.activo()?"ESPERA CIRCULAR · DL-A / DL-B":"ESTADO DE CONFLICTOS");
         conflicto.setText(vista.mensaje()+(vista.activo()?"\nDL-A retiene Montacargas 1 y espera el Escáner compartido.\nDL-B retiene el Escáner y espera Montacargas 1.":""));
         terminarA.setDisable(!vista.listo());terminarB.setDisable(!vista.listo());
         var demorado=demorado(); aumentar.setDisable(demorado.isEmpty());
+        tituloEspera.setText(demorado.isPresent()?"TIEMPO OBJETIVO SUPERADO":"TIEMPOS DE ESPERA");
         alertaEspera.setText(demorado.map(p->"Pedido #"+centro.identificador(p.pedido())+" (Nivel "+p.pedido().nivelServicio().getPrioridad()+") lleva %.1fm en cola. Superó su tiempo objetivo.".formatted(p.espera()))
                 .orElse("No hay pedidos que superen su tiempo objetivo de espera."));
         centro.recepcion.historial().stream().filter(r->r.entrada().id().equals(ultimaEntrada)).findFirst()

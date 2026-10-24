@@ -5,6 +5,7 @@ import gt.edu.cunoc.redxela.servicio.ContextoCentro;
 import java.util.*;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import org.kordamp.ikonli.feather.Feather;
 import static gt.edu.cunoc.redxela.controlador.Componentes.*;
 
 final class VistaInventario extends VBox {
@@ -15,6 +16,7 @@ final class VistaInventario extends VBox {
     private final Label libres = texto("0", "kpi-valor"), fragmentacion = texto("0%", "kpi-valor"),
             unidades = texto("", "dato-cian"), mensaje = parrafo("", "muted");
     private final Button optimizar;
+    private final HBox controles;
 
     VistaInventario(ContextoCentro centro) {
         this.centro = centro; setSpacing(24); getStyleClass().add("pagina");
@@ -22,8 +24,8 @@ final class VistaInventario extends VBox {
             try { centro.almacen.optimizar(); mensaje(mensaje, "Ubicaciones compactadas. Los lotes y cantidades se conservaron.", false); actualizar(); }
             catch (IllegalStateException ex) { mensaje(mensaje, ex.getMessage(), true); }
         });
-        getChildren().add(fila(texto("● Ocupado", "dato-cian"), texto("● Reservado", "dato-amarillo"),
-                texto("● Libre", "muted"), espacio(), optimizar));
+        controles=fila(tituloIcono(Feather.CIRCLE,"Ocupado","leyenda-cian"),tituloIcono(Feather.CIRCLE,"Reservado","leyenda-amarilla"),
+                tituloIcono(Feather.CIRCLE,"Libre","leyenda-libre"),optimizar);
         VBox mapa = new VBox(26);
         for (int pasillo=0; pasillo<2; pasillo++) {
             GridPane grid = new GridPane(); grid.setHgap(4); grid.setVgap(5);
@@ -32,16 +34,19 @@ final class VistaInventario extends VBox {
                 Label celda = texto("", "bin"); celda.setMaxWidth(Double.MAX_VALUE); celda.setMinWidth(0);
                 celdas.add(celda); grid.add(celda,columna,fila);
             }
-            mapa.getChildren().add(new VBox(16, texto("▦  PASILLO "+(pasillo==0?"A":"B")+" · DOS NIVELES", "etiqueta"),grid));
+            mapa.getChildren().add(new VBox(16, tituloIcono(Feather.GRID,"PASILLO "+(pasillo==0?"A":"B")+" · ALMACENAMIENTO", "etiqueta"),grid));
         }
         HBox datos = new HBox(16, tarjeta(texto("TOTAL UBICACIONES","etiqueta"),texto("48","kpi-valor"),unidades),
                 tarjeta(texto("UBICACIONES LIBRES","etiqueta"),libres,texto("Disponibles para nuevos lotes","muted")),
                 tarjeta(texto("FRAGMENTACIÓN","etiqueta"),fragmentacion,texto("Espacio libre fuera del mayor bloque","muted")));
         datos.getChildren().forEach(n -> { HBox.setHgrow(n,Priority.ALWAYS); ((Region)n).setPrefWidth(0); });
-        VBox izquierda = new VBox(28, mapa, datos, mensaje,
-                parrafo("Cada ubicación admite 20 unidades de un producto. Un lote puede ocupar ubicaciones no contiguas. Selecciona una celda para consultar su contenido.", "muted"));
+        mapa.setSpacing(46);
+        VBox izquierda = new VBox(64, mapa, datos, mensaje);
         buscar.setPromptText("Buscar producto, código o categoría…"); buscar.textProperty().addListener((o,a,b)->actualizarCatalogo());
-        VBox derecha = tarjeta(texto("CATÁLOGO DE PRODUCTOS", "titulo-tarjeta"), buscar, catalogo);
+        ScrollPane lista=desplazable(catalogo);lista.setPrefHeight(425);
+        HBox busqueda=fila(icono(Feather.SEARCH,17),buscar);HBox.setHgrow(buscar,Priority.ALWAYS);
+        VBox derecha = new VBox(24,texto("CATÁLOGO DE PRODUCTOS", "titulo-tarjeta"), busqueda,new Separator(),lista);
+        derecha.getStyleClass().add("catalogo-panel");
         getChildren().add(columnas(izquierda,derecha,66,850)); actualizar();
     }
     void actualizar() {
@@ -54,7 +59,7 @@ final class VistaInventario extends VBox {
         for(int i=0;i<estados.size();i++) {
             var estado=estados.get(i); Label celda=celdas.get(i);
             celda.getStyleClass().setAll("bin",estado.reservadas()>0?"bin-reservada":estado.unidades()>0?"bin-ocupada":"bin-libre");
-            celda.setText(estado.unidades()>0?Integer.toString(estado.unidades()):"");
+            celda.setText("");
             String detalle=estado.ubicacion()+" · "+(estado.unidades()==0?"Libre":estado.producto())+"\nUnidades: "+estado.unidades()
                     +" · Reservadas: "+estado.reservadas()+"\n"+String.join("\n",estado.lotes());
             celda.setTooltip(new Tooltip(detalle));
@@ -67,13 +72,17 @@ final class VistaInventario extends VBox {
         for(var producto:CatalogoProductos.getProductos()) {
             if(!(producto.codigo()+" "+producto.nombre()+" "+producto.tipoMercancia()).toLowerCase(Locale.ROOT).contains(filtro))continue;
             int stock=centro.almacen.stock(producto), disponible=centro.almacen.disponible(producto);
-            ProgressBar nivel=new ProgressBar(Math.min(1,stock/60.0)); nivel.setMaxWidth(Double.MAX_VALUE);
-            if(disponible<20)nivel.getStyleClass().add("stock-bajo");
-            VBox card=tarjeta(fila(parrafo(producto.nombre(),"destacado"),espacio(),texto(producto.tipoMercancia().toString(),"badge")),
-                    fila(texto("Stock: "+stock+"u · Disponible: "+disponible+"u","muted"),espacio()),nivel,
-                    texto(disponible<20?"STOCK BAJO · mínimo 20u":producto.codigo()+" · mínimo 20u",disponible<20?"dato-rojo":"muted"));
+            int minimo=producto.tipoMercancia()==gt.edu.cunoc.redxela.modelo.TipoMercancia.VOLUMINOSA?2:20;
+            ProgressBar nivel=new ProgressBar(Math.min(1,stock/Math.max(60.0,minimo*8))); nivel.setMaxWidth(Double.MAX_VALUE);
+            if(disponible<minimo)nivel.getStyleClass().add("stock-bajo");
+            Label categoria=texto(producto.tipoMercancia().toString(),"badge");
+            categoria.getStyleClass().add("categoria-"+producto.tipoMercancia().name().toLowerCase(Locale.ROOT));
+            VBox card=tarjeta(fila(parrafo(producto.nombre(),"destacado"),espacio(),categoria),
+                    fila(texto("Stock actual: "+stock+"u","muted"),espacio(),
+                            texto(disponible<minimo?"STOCK BAJO":"Mínimo: "+minimo+"u",disponible<minimo?"dato-rojo":"muted")),nivel);
             card.getStyleClass().add("producto-card"); catalogo.getChildren().add(card);
         }
         if(catalogo.getChildren().isEmpty())catalogo.getChildren().add(texto("No hay productos que coincidan.","muted"));
     }
+    HBox controles(){return controles;}
 }

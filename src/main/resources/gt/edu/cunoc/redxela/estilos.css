@@ -96,3 +96,73 @@
 .check-box .box { -fx-background-color: #24242a; -fx-border-color: #4c5665; -fx-border-radius: 3; }
 .check-box:selected .mark { -fx-background-color: #00f5ff; }
 .tooltip { -fx-background-color: #202028; -fx-text-fill: #e1edf3; -fx-font-family: "JetBrains Mono"; -fx-font-size: 10px; }
+
+/* Estructura común y estados de los paneles. */
+.lateral { -fx-padding: 24 16 16; }
+.marca-contenedor { -fx-padding: 0 8 36; -fx-alignment: center-left; }
+.nav { -fx-font-size: 15px; -fx-graphic-text-gap: 16; -fx-padding: 14 16; -fx-min-height: 50; }
+.nav .ikonli-font-icon { -fx-icon-color: #737c8c; }
+.nav.seleccionado .ikonli-font-icon { -fx-icon-color: #00f5ff; }
+.logo { -fx-padding: 9; }
+.logo .ikonli-font-icon { -fx-icon-color: #00232a; }
+.avatar { -fx-background-color: #103237; -fx-background-radius: 8; -fx-padding: 6; }
+.avatar .ikonli-font-icon { -fx-icon-color: #00f5ff; }
+.identidad { -fx-padding: 10 8; }
+.barra-superior { -fx-padding: 12 32; -fx-min-height: 64; }
+.titulo-ventana { -fx-font-size: 18px; }
+.pagina { -fx-padding: 32; }
+.tarjeta { -fx-padding: 24; -fx-spacing: 20; }
+.titulo-tarjeta { -fx-font-size: 15px; }
+.titulo-seccion { -fx-font-size: 18px; }
+.destacado { -fx-font-size: 13px; }
+.etiqueta { -fx-font-size: 10px; }
+.muted { -fx-font-size: 12px; }
+.kpi { -fx-pref-height: 174; -fx-spacing: 8; }
+.kpi-valor { -fx-font-size: 30px; }
+.kpi-cian { -fx-effect: dropshadow(gaussian, #00f5ff17, 16, .1, 0, 0); }
+.kpi-rojo { -fx-border-color: #68282b; }
+.ikonli-font-icon, .icono { -fx-icon-color: #00f5ff; }
+.icono-kpi { -fx-padding: 16; -fx-background-radius: 12; }
+.tinte-cian { -fx-background-color: #102e32; }
+.tinte-azul { -fx-background-color: #192234; }
+.tinte-azul .ikonli-font-icon { -fx-icon-color: #3985ff; }
+.tinte-violeta { -fx-background-color: #281e36; }
+.tinte-violeta .ikonli-font-icon { -fx-icon-color: #b45aff; }
+.tinte-rojo { -fx-background-color: #331b1e; }
+.tinte-rojo .ikonli-font-icon, .dato-rojo .ikonli-font-icon { -fx-icon-color: #ff4349; }
+.recurso { -fx-padding: 16; -fx-spacing: 10; -fx-pref-height: 112; }
+.recurso.activo { -fx-border-color: #675510; }
+.recurso.activo .destacado { -fx-text-fill: #e8ca1c; }
+.recurso .badge { -fx-font-size: 8px; }
+.simbolo-recurso { -fx-padding: 0 0 8; }
+.leyenda-cian, .leyenda-amarilla, .leyenda-libre { -fx-font-size: 10px; -fx-text-fill: #8b92a2; }
+.leyenda-cian .ikonli-font-icon { -fx-icon-color: #00f5ff; -fx-icon-size: 8; }
+.leyenda-amarilla .ikonli-font-icon { -fx-icon-color: #f7c900; -fx-icon-size: 8; }
+.leyenda-libre .ikonli-font-icon { -fx-icon-color: #34343a; -fx-icon-size: 8; }
+.estado-sesion { -fx-graphic-text-gap: 8; }
+.estado-sesion.exito .ikonli-font-icon { -fx-icon-color: #22bd68; }
+.estado-sesion.muted .ikonli-font-icon { -fx-icon-color: #7a8290; }
+.formulario-manual { -fx-spacing: 26; -fx-min-height: 690; }
+.monitor-admin { -fx-border-color: #66282b; }
+.alerta-conflicto { -fx-padding: 16; -fx-spacing: 14; -fx-background-color: #211719; -fx-border-color: #65282b; -fx-background-radius: 10; -fx-border-radius: 10; }
+.alerta-inanicion { -fx-padding: 16; -fx-spacing: 14; -fx-background-color: #231f14; -fx-border-color: #5d4d0b; -fx-background-radius: 10; -fx-border-radius: 10; }
+.badge-rojo { -fx-background-color: #f34249; -fx-text-fill: white; -fx-padding: 4 8; -fx-background-radius: 20; -fx-font-size: 10px; -fx-font-weight: bold; }
+.boton-rojo-contorno { -fx-background-color: transparent; -fx-text-fill: #ff4349; -fx-border-color: #69282b; -fx-font-size: 10px; }
+.tipo-mercancia { -fx-font-size: 10px; -fx-pref-height: 33; }
+.boton-primario { -fx-min-height: 40; }
+.boton-rojo, .boton-secundario { -fx-font-size: 11px; }
+.catalogo-panel { -fx-padding: 0 0 12 24; -fx-border-color: transparent transparent transparent #29292d; }
+.producto-card { -fx-padding: 16; -fx-spacing: 14; }
+.categoria-electronica { -fx-text-fill: #3985ff; -fx-background-color: #162132; }
+.categoria-pesada { -fx-text-fill: #ff8c18; -fx-background-color: #332113; }
+.categoria-voluminosa { -fx-text-fill: #1ac66c; -fx-background-color: #142d20; }
+.nivel-pedido { -fx-padding: 15 10; -fx-background-color: #103237; -fx-border-color: #08636b; -fx-border-radius: 10; -fx-background-radius: 10; -fx-text-fill: #00f5ff; }
+.politica { -fx-font-size: 9px; -fx-padding: 3; }
+.barra-inferior { -fx-padding: 16 32; }
+.recurso .destacado { -fx-font-size: 11px; }
+.recurso .muted { -fx-font-size: 10px; }
+.recurso .badge { -fx-font-size: 7px; -fx-padding: 3 5; }
+.recurso .ikonli-font-icon { -fx-icon-size: 18; }
+.progress-indicator { -fx-progress-color: #00f5ff; }
+.formulario-manual .titulo-tarjeta .ikonli-font-icon { -fx-icon-color: #00f5ff; }
+.monitor-admin .titulo-tarjeta .ikonli-font-icon { -fx-icon-color: #ff4349; }

@@ -1,59 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-
-<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="gt.edu.cunoc.redxela.controlador.VistaPrincipalController" stylesheets="@estilos.css">
-    <left>
-        <VBox prefWidth="226" minWidth="226" maxWidth="226" spacing="12" styleClass="lateral">
-            <HBox spacing="12" alignment="CENTER_LEFT" styleClass="marca-contenedor">
-                <Label text="▦" styleClass="logo"/>
-                <HBox alignment="CENTER_LEFT"><Label text="RED" styleClass="marca"/><Label text="Xela" styleClass="marca-cian"/></HBox>
-            </HBox>
-            <Button fx:id="navMonitoreo" text="⌁   Monitoreo en vivo" onAction="#monitorear" maxWidth="Infinity" styleClass="nav"/>
-            <Button fx:id="navInventario" text="▦   Inventario &amp; stock" onAction="#almacenar" maxWidth="Infinity" styleClass="nav"/>
-            <Button fx:id="navAdmin" text="⚠   Conflictos (deadlocks)" onAction="#administrar" maxWidth="Infinity" wrapText="true" styleClass="nav"/>
-            <Button text="◷   Historial de pedidos" onAction="#historial" maxWidth="Infinity" styleClass="nav"/>
-            <Label text="SIMULACIÓN" styleClass="grupo-nav"/>
-            <Button text="⊕   Nuevo pedido manual" onAction="#administrar" maxWidth="Infinity" wrapText="true" styleClass="nav"/>
-            <Button text="↳   Ingresar mercadería" onAction="#recepcionar" maxWidth="Infinity" styleClass="nav"/>
-            <Label text="HERRAMIENTAS" styleClass="grupo-nav"/>
-            <Button text="⌘   Modo depuración" onAction="#depurar" maxWidth="Infinity" styleClass="nav"/>
-            <Region VBox.vgrow="ALWAYS"/>
-            <VBox spacing="7" styleClass="identidad">
-                <Label text="USAC / CUNOC" styleClass="dato-cian"/>
-                <Label text="Universidad de San Carlos de Guatemala" wrapText="true" styleClass="institucion"/>
-                <Label text="ADMINISTRACIÓN · SO2" styleClass="etiqueta"/>
-            </VBox>
-        </VBox>
-    </left>
-    <center>
-        <BorderPane>
-            <top>
-                <HBox alignment="CENTER_LEFT" spacing="14" styleClass="barra-superior">
-                    <Label fx:id="titulo" text="Panel de Control General" minWidth="0" styleClass="titulo-ventana"/>
-                    <Label fx:id="estado" text="● SIMULACIÓN PAUSADA" styleClass="estado-sesion"/>
-                    <Region HBox.hgrow="ALWAYS"/>
-                    <Button fx:id="iniciar" text="▶" onAction="#alternar" styleClass="control-simulacion"/>
-                    <Button text="▸|" onAction="#paso" styleClass="control-simulacion"><tooltip><Tooltip text="Avanzar un minuto simulado en pausa"/></tooltip></Button>
-                    <Label text="Velocidad:" styleClass="muted"/>
-                    <ComboBox fx:id="velocidad" prefWidth="85"/>
-                </HBox>
-            </top>
-            <center><ScrollPane fx:id="contenido" fitToWidth="true" hbarPolicy="NEVER" pannable="true"/></center>
-            <bottom>
-                <VBox spacing="4" styleClass="barra-inferior">
-                    <HBox alignment="CENTER_LEFT" spacing="12">
-                        <Label text="CAPACIDAD ALMACÉN:" styleClass="etiqueta"/>
-                        <ProgressBar fx:id="barraCapacidad" prefWidth="105" progress="0"/>
-                        <Label fx:id="capacidad" text="0%" styleClass="dato-cian"/>
-                        <Region HBox.hgrow="ALWAYS"/>
-                        <Label text="SISTEMAS OPERATIVOS 2" styleClass="dato-cian"/>
-                        <Label text="2026" styleClass="etiqueta"/>
-                    </HBox>
-                    <HBox spacing="15"><Label fx:id="entorno" styleClass="etiqueta"/><Label fx:id="aviso" styleClass="muted"/></HBox>
-                </VBox>
-            </bottom>
-        </BorderPane>
-    </center>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gt.edu.cunoc.redxela.controlador.VistaPrincipalController" stylesheets="@estilos.css">
+ <left><VBox prefWidth="256" minWidth="256" maxWidth="256" spacing="8" styleClass="lateral">
+  <HBox spacing="12" alignment="CENTER_LEFT" styleClass="marca-contenedor">
+   <Label styleClass="logo"><graphic><FontIcon iconLiteral="fth-package" iconSize="24"/></graphic></Label>
+   <HBox><Label text="RED" styleClass="marca"/><Label text="Xela" styleClass="marca-cian"/></HBox>
+  </HBox>
+  <Button fx:id="navMonitoreo" text="Monitoreo En Vivo" onAction="#monitorear" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-activity" iconSize="19"/></graphic></Button>
+  <Button fx:id="navInventario" text="Inventario &amp; Stock" onAction="#almacenar" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-archive" iconSize="19"/></graphic></Button>
+  <Button fx:id="navAdmin" text="Conflictos (Deadlocks)" onAction="#administrar" maxWidth="Infinity" wrapText="true" styleClass="nav"><graphic><FontIcon iconLiteral="fth-alert-triangle" iconSize="19"/></graphic></Button>
+  <VBox fx:id="menuMonitoreo" spacing="8">
+   <Button text="Historial de Pedidos" onAction="#historial" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-rotate-ccw" iconSize="19"/></graphic></Button>
+   <Label text="SIMULACIÓN" styleClass="grupo-nav"/>
+   <Button text="Nuevo Pedido Manual" onAction="#administrar" maxWidth="Infinity" wrapText="true" styleClass="nav"><graphic><FontIcon iconLiteral="fth-plus-circle" iconSize="19"/></graphic></Button>
+   <Button text="Ingresar Mercadería" onAction="#recepcionar" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-truck" iconSize="19"/></graphic></Button>
+  </VBox>
+  <VBox fx:id="menuInventario" spacing="8"><Label text="GESTIÓN" styleClass="grupo-nav"/><Button text="Recepción de Carga" onAction="#recepcionar" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-truck" iconSize="19"/></graphic></Button></VBox>
+  <VBox fx:id="menuAdmin" spacing="8"><Label text="HERRAMIENTAS" styleClass="grupo-nav"/><Button text="Modo Depuración" onAction="#depurar" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-code" iconSize="19"/></graphic></Button></VBox>
+  <Region VBox.vgrow="ALWAYS"/>
+  <HBox spacing="12" alignment="CENTER_LEFT" styleClass="identidad"><Label styleClass="avatar"><graphic><FontIcon iconLiteral="fth-user" iconSize="26"/></graphic></Label><VBox spacing="4"><Label text="Ing. Otto Soto" styleClass="destacado"/><Label text="ADMINISTRADOR" styleClass="etiqueta"/></VBox></HBox>
+ </VBox></left>
+ <center><BorderPane>
+  <top><HBox alignment="CENTER_LEFT" spacing="20" styleClass="barra-superior">
+   <Label fx:id="titulo" minWidth="0" styleClass="titulo-ventana"/>
+   <Label fx:id="estado" styleClass="estado-sesion"><graphic><FontIcon iconLiteral="fth-circle" iconSize="8"/></graphic></Label>
+   <Region HBox.hgrow="ALWAYS"/>
+   <HBox fx:id="controlesMonitoreo" spacing="10" alignment="CENTER_LEFT">
+    <Button fx:id="iniciar" onAction="#reanudar" styleClass="control-simulacion"><graphic><FontIcon iconLiteral="fth-play" iconSize="17"/></graphic><tooltip><Tooltip text="Iniciar o reanudar"/></tooltip></Button>
+    <Button fx:id="pausar" onAction="#pausar" styleClass="control-simulacion"><graphic><FontIcon iconLiteral="fth-pause" iconSize="17"/></graphic><tooltip><Tooltip text="Pausar"/></tooltip></Button>
+    <Button fx:id="avanzar" onAction="#paso" styleClass="control-simulacion"><graphic><FontIcon iconLiteral="fth-skip-forward" iconSize="17"/></graphic><tooltip><Tooltip text="Avanzar un minuto en pausa"/></tooltip></Button>
+    <Label text="Velocidad:" styleClass="muted"/><ComboBox fx:id="velocidad" prefWidth="85"/>
+   </HBox>
+   <HBox fx:id="controlesInventario" spacing="12" alignment="CENTER_LEFT"/>
+   <HBox fx:id="controlesAdmin" spacing="0" alignment="CENTER_LEFT"><Label text="Simulación:   " styleClass="muted"/><ToggleButton fx:id="estandar" text="ESTÁNDAR" onAction="#modoEstandar"/><ToggleButton fx:id="estres" text="STRESS TEST" onAction="#modoEstres"/></HBox>
+  </HBox></top>
+  <center><ScrollPane fx:id="contenido" fitToWidth="true" hbarPolicy="NEVER" pannable="true"/></center>
+  <bottom><HBox alignment="CENTER_LEFT" spacing="12" styleClass="barra-inferior">
+   <Label fx:id="pie" text="CAPACIDAD ALMACÉN:" styleClass="etiqueta"/><ProgressBar fx:id="barraCapacidad" prefWidth="92"/><Label fx:id="capacidad" styleClass="dato-cian"/>
+   <Label fx:id="entorno" styleClass="etiqueta"/><Label fx:id="aviso" styleClass="muted"/><Region HBox.hgrow="ALWAYS"/>
+   <Label text="USAC · SISTEMAS OPERATIVOS 2" styleClass="dato-cian"/><Label text="2026" styleClass="etiqueta"/>
+  </HBox></bottom>
+ </BorderPane></center>
 </BorderPane>

@@ -69,6 +69,17 @@ public final class MotorSimulacion implements AutoCloseable {
         var estados = recursos.estados();
         tiempoOcupado += delta * estados.stream().filter(e -> !e.disponible()).count();
         tiempoMedido += delta * estados.size();
+        asignar();
+    }
+
+    public synchronized void paso() {
+        if (activa) throw new IllegalArgumentException("Pausa la simulación antes de avanzar un minuto.");
+        if (cerrada) return;
+        minutos += 1;
+        asignar();
+    }
+
+    private void asignar() {
         int activos = (int) trabajos.stream().filter(t -> t.estado == EstadoPedido.EN_PROCESO).count();
         for (Trabajo t : pendientes()) {
             if (activos >= 8) break;
@@ -93,7 +104,7 @@ public final class MotorSimulacion implements AutoCloseable {
             while (true) {
                 synchronized (this) {
                     if (cerrada) throw new InterruptedException();
-                    if (activa && recursos.intentar(titular(t), Map.of(TipoRecurso.ESCANER, 1, TipoRecurso.AREA_CARGA, 1))) break;
+                    if (recursos.intentar(titular(t), Map.of(TipoRecurso.ESCANER, 1, TipoRecurso.AREA_CARGA, 1))) break;
                 }
                 Thread.sleep(40);
             }

@@ -62,5 +62,9 @@ public final class MonitorConflictos implements AutoCloseable {
     }
 
     public synchronized Vista vista() { return new Vista(activo, recuperando, activo && listos.getCount() == 0, mensaje); }
-    @Override public void close() { hilos.shutdownNow(); }
+    @Override public void close() {
+        hilos.shutdownNow();
+        for(String titular:new String[]{"DL-A","DL-B","DL-A (reencolado)","DL-B (reencolado)"}) recursos.liberar(titular);
+        synchronized(this){activo=false;recuperando=false;}
+    }
 }

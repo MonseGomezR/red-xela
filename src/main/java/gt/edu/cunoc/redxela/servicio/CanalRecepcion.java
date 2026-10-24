@@ -64,5 +64,9 @@ public final class CanalRecepcion implements AutoCloseable {
     }
     public synchronized List<Resultado> historial() { return List.copyOf(historial.values()); }
     public int pendientes() { return mensajes.size(); }
-    @Override public synchronized void close() { cerrado = true; consumidor.shutdownNow(); }
+    @Override public synchronized void close() {
+        cerrado = true; consumidor.shutdownNow();
+        Entrada entrada;
+        while ((entrada = mensajes.poll()) != null) historial.put(entrada.id, new Resultado(entrada, "Cancelado al cerrar"));
+    }
 }

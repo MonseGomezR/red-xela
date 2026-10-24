@@ -81,7 +81,10 @@ public final class MotorSimulacion implements AutoCloseable {
 
     private void asignar() {
         int activos = (int) trabajos.stream().filter(t -> t.estado == EstadoPedido.EN_PROCESO).count();
-        for (Trabajo t : pendientes()) {
+        List<Trabajo> candidatos = pendientes();
+        // Una reserva pendiente no debe anular un cambio de política ni la llegada de mayor prioridad.
+        candidatos.forEach(t -> almacen.liberar(t.pedido.id()));
+        for (Trabajo t : candidatos) {
             if (activos >= 8) break;
             if (!almacen.reservar(t.pedido.id(), t.pedido.detalles())) {
                 t.estado = EstadoPedido.ESPERANDO_INVENTARIO; t.fase = "Sin existencias"; continue;
@@ -184,7 +187,9 @@ public final class MotorSimulacion implements AutoCloseable {
         synchronized (this) { cerrada = true; activa = false; }
         reloj.shutdownNow(); trabajadores.shutdownNow();
         synchronized (this) {
-            for (Trabajo t : trabajos) if (t.estado != EstadoPedido.EN_PROCESO) almacen.liberar(t.pedido.id());
+            for (Trabajo t : trabajos) {
+                almacen.liberar(t.pedido.id()); recursos.liberar(titular(t));
+            }
         }
     }
 }

@@ -3,22 +3,27 @@
 <?import javafx.scene.layout.*?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 <BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gt.edu.cunoc.redxela.controlador.VistaPrincipalController" stylesheets="@estilos.css">
- <left><VBox prefWidth="256" minWidth="256" maxWidth="256" spacing="8" styleClass="lateral">
+ <left><VBox prefWidth="256" minWidth="256" maxWidth="256" spacing="6" styleClass="lateral">
   <HBox spacing="12" alignment="CENTER_LEFT" styleClass="marca-contenedor">
    <Label styleClass="logo"><graphic><FontIcon iconLiteral="fth-package" iconSize="24"/></graphic></Label>
    <HBox><Label text="RED" styleClass="marca"/><Label text="Xela" styleClass="marca-cian"/></HBox>
   </HBox>
-  <Button fx:id="navMonitoreo" text="Monitoreo En Vivo" onAction="#monitorear" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-activity" iconSize="19"/></graphic></Button>
-  <Button fx:id="navInventario" text="Inventario &amp; Stock" onAction="#almacenar" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-archive" iconSize="19"/></graphic></Button>
-  <Button fx:id="navAdmin" text="Conflictos (Deadlocks)" onAction="#administrar" maxWidth="Infinity" wrapText="true" styleClass="nav"><graphic><FontIcon iconLiteral="fth-alert-triangle" iconSize="19"/></graphic></Button>
-  <VBox fx:id="menuMonitoreo" spacing="8">
-   <Button text="Historial de Pedidos" onAction="#historial" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-rotate-ccw" iconSize="19"/></graphic></Button>
-   <Label text="SIMULACIÓN" styleClass="grupo-nav"/>
-   <Button text="Nuevo Pedido Manual" onAction="#administrar" maxWidth="Infinity" wrapText="true" styleClass="nav"><graphic><FontIcon iconLiteral="fth-plus-circle" iconSize="19"/></graphic></Button>
-   <Button text="Ingresar Mercadería" onAction="#recepcionar" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-truck" iconSize="19"/></graphic></Button>
+  <Button fx:id="navMonitoreo" text="Monitoreo" onAction="#monitorear" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-activity" iconSize="19"/></graphic></Button>
+  <Button fx:id="navPedidos" text="Pedidos" onAction="#nuevoPedido" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-shopping-cart" iconSize="19"/></graphic></Button>
+  <VBox spacing="2" styleClass="submenu">
+   <Button fx:id="subNuevo" text="Nuevo pedido" onAction="#nuevoPedido" maxWidth="Infinity" styleClass="nav,subnav"/>
+   <Button fx:id="subHistorial" text="Historial de pedidos" onAction="#historial" maxWidth="Infinity" styleClass="nav,subnav"/>
   </VBox>
-  <VBox fx:id="menuInventario" spacing="8"><Label text="GESTIÓN" styleClass="grupo-nav"/><Button text="Recepción de Carga" onAction="#recepcionar" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-truck" iconSize="19"/></graphic></Button></VBox>
-  <VBox fx:id="menuAdmin" spacing="8"><Label text="HERRAMIENTAS" styleClass="grupo-nav"/><Button text="Modo Depuración" onAction="#depurar" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-code" iconSize="19"/></graphic></Button></VBox>
+  <Button fx:id="navInventario" text="Inventario" onAction="#almacenar" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-archive" iconSize="19"/></graphic></Button>
+  <VBox spacing="2" styleClass="submenu">
+   <Button fx:id="subMapa" text="Almacén y existencias" onAction="#almacenar" maxWidth="Infinity" styleClass="nav,subnav"/>
+   <Button fx:id="subRecepcion" text="Recibir mercadería" onAction="#recepcionar" maxWidth="Infinity" styleClass="nav,subnav"/>
+  </VBox>
+  <Button fx:id="navAdmin" text="Conflictos" onAction="#administrar" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-alert-triangle" iconSize="19"/></graphic></Button>
+  <VBox spacing="2" styleClass="submenu">
+   <Button fx:id="subConflictos" text="Resolución de conflictos" onAction="#administrar" maxWidth="Infinity" styleClass="nav,subnav"/>
+   <Button fx:id="subDepurar" text="Depuración" onAction="#depurar" maxWidth="Infinity" styleClass="nav,subnav"/>
+  </VBox>
   <Region VBox.vgrow="ALWAYS"/>
   <HBox spacing="12" alignment="CENTER_LEFT" styleClass="identidad"><Label styleClass="avatar"><graphic><FontIcon iconLiteral="fth-user" iconSize="26"/></graphic></Label><VBox spacing="4"><Label text="Sesión local" styleClass="destacado"/><Label text="SIMULADOR" styleClass="etiqueta"/></VBox></HBox>
  </VBox></left>
@@ -40,7 +45,7 @@
   <bottom><HBox alignment="CENTER_LEFT" spacing="12" styleClass="barra-inferior">
    <Label fx:id="pie" text="CAPACIDAD ALMACÉN:" styleClass="etiqueta"/><ProgressBar fx:id="barraCapacidad" prefWidth="92"/><Label fx:id="capacidad" styleClass="dato-cian"/>
    <Label fx:id="entorno" styleClass="etiqueta"/><Label fx:id="aviso" styleClass="muted"/><Region HBox.hgrow="ALWAYS"/>
-   <Label text="USAC · SISTEMAS OPERATIVOS 2" styleClass="dato-cian"/>
+   <Label text="USAC, SISTEMAS OPERATIVOS 2" styleClass="dato-cian"/>
   </HBox></bottom>
  </BorderPane></center>
 </BorderPane>

@@ -115,7 +115,7 @@ final class VistaMonitoreo extends VBox {
             ProgressBar barra=new ProgressBar(p.progreso());barra.setMaxWidth(Double.MAX_VALUE);
             String nombre=centro.clientes.buscarPorId(p.pedido().clienteId()).orElseThrow().nombre();
             VBox datos=new VBox(7,fila(texto("#"+centro.identificador(p.pedido())+" - "+nombre,"destacado"),espacio(),texto("%.1fm restantes".formatted(p.restante()),"mono")),
-                    texto(p.pedido().detalles().getFirst().producto().tipoMercancia()+" · "+p.pedido().getTotalArticulos()+" UNIDADES","etiqueta"),barra);HBox.setHgrow(datos,Priority.ALWAYS);
+                    texto(p.pedido().detalles().getFirst().producto().tipoMercancia()+", "+p.pedido().getTotalArticulos()+" UNIDADES","etiqueta"),barra);HBox.setHgrow(datos,Priority.ALWAYS);
             HBox iconos=new HBox(5);String titular="P-"+p.pedido().id().toString().substring(0,8);
             estados.stream().filter(e->titular.equals(e.titular())).map(GestorRecursos.Estado::tipo).distinct().forEach(t->iconos.getChildren().add(icono(iconoRecurso(t),14)));
             activos.getChildren().add(fila(texto("N"+p.pedido().nivelServicio().getPrioridad(),"nivel-pedido"),datos,new VBox(7,texto("RECURSOS","etiqueta"),iconos)));
@@ -124,7 +124,7 @@ final class VistaMonitoreo extends VBox {
         if(pendientes.isEmpty())cola.getChildren().add(texto("La lista de espera está vacía.","muted"));
         for(var p:pendientes.stream().limit(6).toList()){
             VBox item=new VBox(6,fila(texto("Pedido #"+centro.identificador(p.pedido()),"destacado"),espacio(),texto(p.pedido().nivelServicio().toString(),"dato-cian")),
-                    parrafo(p.pedido().detalles().getFirst().producto().tipoMercancia()+" · "+p.pedido().getTotalArticulos()+" artículos · %.1fm en cola".formatted(p.espera()),"muted"));
+                    parrafo(p.pedido().detalles().getFirst().producto().tipoMercancia()+", "+p.pedido().getTotalArticulos()+" artículos, %.1fm en cola".formatted(p.espera()),"muted"));
             item.getStyleClass().add("fila-espera");cola.getChildren().add(item);
         }
     }

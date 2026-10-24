@@ -48,7 +48,7 @@ public final class CanalRecepcion implements AutoCloseable {
                 estado(entrada, "Procesando");
                 Thread.sleep(180);
                 UUID lote = almacen.recibir(entrada.producto, entrada.cantidad);
-                estado(entrada, "Recibido · lote " + lote.toString().substring(0, 8));
+                estado(entrada, "Recibido, lote " + lote.toString().substring(0, 8));
             } catch (InterruptedException exception) {
                 if (entrada != null) estado(entrada, "Cancelado al cerrar");
                 Thread.currentThread().interrupt();

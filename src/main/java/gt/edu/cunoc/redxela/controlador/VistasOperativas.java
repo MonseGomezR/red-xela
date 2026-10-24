@@ -10,7 +10,8 @@ import org.kordamp.ikonli.feather.Feather;
 import java.util.*;
 import static gt.edu.cunoc.redxela.controlador.Componentes.*;
 
-final class VistaAdministracion extends VBox {
+final class VistasOperativas {
+    private final VBox pedido, recepcion, conflictos;
     private final ContextoCentro centro;
     private final TextField id=new TextField(), cliente=new TextField(), lote=new TextField();
     private final ComboBox<NivelServicio> servicio=new ComboBox<>();
@@ -24,8 +25,8 @@ final class VistaAdministracion extends VBox {
     private final Button terminarA, terminarB, aumentar;
     private UUID ultimaEntrada;
 
-    VistaAdministracion(ContextoCentro centro) {
-        this.centro=centro; getStyleClass().add("pagina");
+    VistasOperativas(ContextoCentro centro) {
+        this.centro=centro;
         id.setText(centro.siguienteIdManual()); cliente.setPromptText("Nombre del cliente...");
         servicio.getItems().setAll(NivelServicio.values()); servicio.setValue(NivelServicio.ESTANDAR);
         servicio.setConverter(new StringConverter<>() {
@@ -33,9 +34,9 @@ final class VistaAdministracion extends VBox {
             public NivelServicio fromString(String s){return null;}
         }); servicio.setMaxWidth(Double.MAX_VALUE);
         HBox cabecera=campos(campo("ID PEDIDO",id),campo("NIVEL DE SERVICIO",servicio));
-        HBox mercancias=new HBox(8);
-        TipoMercancia[] valores={TipoMercancia.FRAGIL,TipoMercancia.PESADA,TipoMercancia.VOLUMINOSA};
-        String[] nombres={"FRÁGIL","PESADO","VOLUMEN"};
+        FlowPane mercancias=new FlowPane(8,8);
+        TipoMercancia[] valores=TipoMercancia.values();
+        String[] nombres=Arrays.stream(valores).map(t->t.toString().toUpperCase(Locale.ROOT)).toArray(String[]::new);
         for(int i=0;i<valores.length;i++) {
             ToggleButton b=new ToggleButton(nombres[i]); b.setToggleGroup(tipos); b.setUserData(valores[i]);
             b.getStyleClass().add("tipo-mercancia"); b.setMaxWidth(Double.MAX_VALUE); HBox.setHgrow(b,Priority.ALWAYS);
@@ -46,18 +47,18 @@ final class VistaAdministracion extends VBox {
         lote.setPromptText("Cantidad a recibir");
         Label unidades=texto("1u","dato-cian"); cantidad.valueProperty().addListener((o,a,b)->unidades.setText(Math.round(b.doubleValue())+"u"));
         Button inyectar=boton("INYECTAR PEDIDO AL SISTEMA","boton-primario",this::inyectar); inyectar.setMaxWidth(Double.MAX_VALUE);
-        VBox manual=tarjeta(tituloIcono(Feather.SHOPPING_CART,"CREAR PEDIDO MANUAL","titulo-tarjeta"),new Separator(),
+        pedido=tarjeta(tituloIcono(Feather.SHOPPING_CART,"CREAR PEDIDO MANUAL","titulo-tarjeta"),new Separator(),
                 cabecera,campo("CLIENTE / CUENTA",cliente),campo("TIPO DE MERCANCÍA",mercancias),
                 campo("CANTIDAD DE UNIDADES",new VBox(8,cantidad,fila(texto("1u","mono"),espacio(),unidades,espacio(),texto("100u","mono")))),inyectar,mensajePedido);
-        manual.getStyleClass().add("formulario-manual");
-        terminarA=boton("TERMINAR DL-A","boton-rojo",()->resolver(false));
-        terminarB=boton("TERMINAR DL-B","boton-rojo-contorno",()->resolver(true));
+        pedido.getStyleClass().add("formulario-pedido");
+        terminarA=boton("CONTINUAR DL-A","boton-rojo",()->resolver(true));
+        terminarB=boton("CONTINUAR DL-B","boton-rojo-contorno",()->resolver(false));
         VBox ciclo=tarjeta(tituloCiclo,conflicto,campos(terminarA,terminarB));
         ciclo.getStyleClass().add("alerta-conflicto");
         aumentar=boton("AUMENTAR PRIORIDAD MANUALMENTE","boton-amarillo",this::priorizar); aumentar.setMaxWidth(Double.MAX_VALUE);
         VBox inanicion=tarjeta(tituloEspera,alertaEspera,aumentar); inanicion.getStyleClass().add("alerta-inanicion");
-        VBox monitor=tarjeta(fila(tituloIcono(Feather.LINK_2,"MONITOR DE DEADLOCKS","titulo-tarjeta"),espacio(),cuentaConflictos),ciclo,inanicion);
-        monitor.getStyleClass().add("monitor-admin");
+        conflictos=tarjeta(fila(tituloIcono(Feather.LINK_2,"MONITOR DE DEADLOCKS","titulo-tarjeta"),espacio(),cuentaConflictos),ciclo,inanicion);
+        conflictos.getStyleClass().add("monitor-admin");
         recibido.getItems().setAll(CatalogoProductos.getProductos()); recibido.getSelectionModel().selectFirst(); recibido.setMaxWidth(Double.MAX_VALUE);
         recibido.setConverter(new StringConverter<>() {
             public String toString(Producto p){return p==null?"":p.nombre()+" ("+p.tipoMercancia()+")";}
@@ -74,13 +75,13 @@ final class VistaAdministracion extends VBox {
             } catch(NumberFormatException ex){mensaje(mensajeEntrada,"Ingresa una cantidad entera positiva.",true);}
             catch(IllegalArgumentException ex){mensaje(mensajeEntrada,ex.getMessage(),true);}
         }); entrada.setMaxWidth(Double.MAX_VALUE);
-        VBox recepcion=tarjeta(tituloIcono(Feather.TRUCK,"LLEGADA DE MERCADERÍA","titulo-tarjeta"),
+        recepcion=tarjeta(tituloIcono(Feather.TRUCK,"LLEGADA DE MERCADERÍA","titulo-tarjeta"),
                 campo("SELECCIONAR PRODUCTO",recibido),campos(campo("CANTIDAD (LOTE)",lote),campo("MUELLE DE CARGA",muelle)),entrada,mensajeEntrada);
-        GridPane paneles=columnas(manual,new VBox(30,monitor,recepcion),50,850); paneles.setHgap(30);
-        // La tarjeta izquierda acompaña la altura de ambos paneles de administración.
-        GridPane.setFillHeight(manual,true); manual.setMaxHeight(Double.MAX_VALUE);
-        getChildren().add(paneles); actualizar();
+        actualizar();
     }
+    VBox pedido(){return pedido;}
+    VBox recepcion(){return recepcion;}
+    VBox conflictos(){return conflictos;}
     private VBox campo(String nombre,javafx.scene.Node control){return new VBox(8,texto(nombre,"etiqueta"),control);}
     private HBox campos(Region... elementos) {
         HBox fila=new HBox(16,elementos);
@@ -105,7 +106,7 @@ final class VistaAdministracion extends VBox {
     private void priorizar() { demorado().ifPresent(p->centro.motor.priorizar(p.pedido().id())); actualizar(); }
     void actualizar() {
         var vista=centro.conflictos.vista(); cuentaConflictos.setText(vista.activo()?"1 ACTIVO":"0 ACTIVOS");
-        tituloCiclo.setText(vista.activo()?"ESPERA CIRCULAR · DL-A / DL-B":"ESTADO DE CONFLICTOS");
+        tituloCiclo.setText(vista.activo()?"ESPERA CIRCULAR, DL-A / DL-B":"ESTADO DE CONFLICTOS");
         conflicto.setText(vista.mensaje()+(vista.activo()?"\nDL-A retiene Montacargas 1 y espera el Escáner compartido.\nDL-B retiene el Escáner y espera Montacargas 1.":""));
         terminarA.setDisable(!vista.listo());terminarB.setDisable(!vista.listo());
         var demorado=demorado(); aumentar.setDisable(demorado.isEmpty());
@@ -115,5 +116,4 @@ final class VistaAdministracion extends VBox {
         centro.recepcion.historial().stream().filter(r->r.entrada().id().equals(ultimaEntrada)).findFirst()
                 .ifPresent(r->mensaje(mensajeEntrada,r.estado(),r.estado().startsWith("Rechazado")));
     }
-    void enfocarRecepcion(){recibido.requestFocus();}
 }

@@ -166,3 +166,15 @@
 .progress-indicator { -fx-progress-color: #00f5ff; }
 .formulario-manual .titulo-tarjeta .ikonli-font-icon { -fx-icon-color: #00f5ff; }
 .monitor-admin .titulo-tarjeta .ikonli-font-icon { -fx-icon-color: #ff4349; }
+
+/* Las secciones y sus submenús conservan su posición al navegar. */
+.lateral .marca-contenedor { -fx-padding: 0 8 18; }
+.lateral .nav { -fx-min-height: 40; -fx-padding: 10 16; }
+.submenu { -fx-padding: 0 0 2 44; }
+.lateral .subnav { -fx-min-height: 26; -fx-padding: 5 8; -fx-font-size: 12px; -fx-background-radius: 0; -fx-border-radius: 0; }
+.lateral .subnav.seleccionado { -fx-background-color: transparent; -fx-border-color: transparent transparent transparent #00cbd5; -fx-border-width: 0 0 0 2; }
+.nav:focused { -fx-background-insets: 0; -fx-border-color: transparent; }
+.nav.seleccionado:focused { -fx-border-color: #09606a; }
+.subnav.seleccionado:focused { -fx-border-color: transparent transparent transparent #00cbd5; }
+.formulario-pedido { -fx-spacing: 22; }
+.lateral .subnav { -fx-border-width: 0 0 0 2; }

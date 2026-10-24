@@ -34,7 +34,7 @@ final class VistaInventario extends VBox {
                 Label celda = texto("", "bin"); celda.setMaxWidth(Double.MAX_VALUE); celda.setMinWidth(0);
                 celdas.add(celda); grid.add(celda,columna,fila);
             }
-            mapa.getChildren().add(new VBox(16, tituloIcono(Feather.GRID,"PASILLO "+(pasillo==0?"A":"B")+" · ALMACENAMIENTO", "etiqueta"),grid));
+            mapa.getChildren().add(new VBox(16, tituloIcono(Feather.GRID,"PASILLO "+(pasillo==0?"A":"B")+", ALMACENAMIENTO", "etiqueta"),grid));
         }
         HBox datos = new HBox(16, tarjeta(texto("TOTAL UBICACIONES","etiqueta"),texto("48","kpi-valor"),unidades),
                 tarjeta(texto("UBICACIONES LIBRES","etiqueta"),libres,texto("Disponibles para nuevos lotes","muted")),
@@ -42,7 +42,7 @@ final class VistaInventario extends VBox {
         datos.getChildren().forEach(n -> { HBox.setHgrow(n,Priority.ALWAYS); ((Region)n).setPrefWidth(0); });
         mapa.setSpacing(46);
         VBox izquierda = new VBox(64, mapa, datos, mensaje);
-        buscar.setPromptText("Buscar producto, código o categoría…"); buscar.textProperty().addListener((o,a,b)->actualizarCatalogo());
+        buscar.setPromptText("Buscar producto, código o categoría..."); buscar.textProperty().addListener((o,a,b)->actualizarCatalogo());
         ScrollPane lista=desplazable(catalogo);lista.setPrefHeight(425);
         HBox busqueda=fila(icono(Feather.SEARCH,17),buscar);HBox.setHgrow(buscar,Priority.ALWAYS);
         VBox derecha = new VBox(24,texto("CATÁLOGO DE PRODUCTOS", "titulo-tarjeta"), busqueda,new Separator(),lista);
@@ -60,8 +60,8 @@ final class VistaInventario extends VBox {
             var estado=estados.get(i); Label celda=celdas.get(i);
             celda.getStyleClass().setAll("bin",estado.reservadas()>0?"bin-reservada":estado.unidades()>0?"bin-ocupada":"bin-libre");
             celda.setText("");
-            String detalle=estado.ubicacion()+" · "+(estado.unidades()==0?"Libre":estado.producto())+"\nUnidades: "+estado.unidades()
-                    +" · Reservadas: "+estado.reservadas()+"\n"+String.join("\n",estado.lotes());
+            String detalle=estado.ubicacion()+", "+(estado.unidades()==0?"Libre":estado.producto())+"\nUnidades: "+estado.unidades()
+                    +", Reservadas: "+estado.reservadas()+"\n"+String.join("\n",estado.lotes());
             celda.setTooltip(new Tooltip(detalle));
             celda.setOnMouseClicked(e -> mensaje.setText(detalle));
         }

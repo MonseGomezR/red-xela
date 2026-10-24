@@ -20,10 +20,10 @@ public class RedXelaApplication extends Application {
                 throw new IOException("No se encontró el archivo de la vista principal.");
             }
             // FXML mantiene la estructura visual separada del código Java.
-            Scene scene = new Scene(new FXMLLoader(vista).load(), 800, 500);
+            Scene scene = new Scene(new FXMLLoader(vista).load(), 1120, 680);
             stage.setTitle("REDXela - Simulador de distribución");
-            stage.setMinWidth(640);
-            stage.setMinHeight(400);
+            stage.setMinWidth(1050);
+            stage.setMinHeight(680);
             stage.setScene(scene);
             stage.show();
         } catch (IOException exception) {

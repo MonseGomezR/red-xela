@@ -1,20 +1,86 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 
-<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      alignment="CENTER" spacing="18">
-    <padding>
-        <Insets top="32" right="32" bottom="32" left="32"/>
-    </padding>
-    <Label text="REDXela">
-        <font><Font size="32"/></font>
-    </Label>
-    <Label text="Simulador de un centro de distribución" wrapText="true"/>
-    <Label text="Sistemas Operativos 2 - CUNOC"/>
-    <Label text="Avance 1: estructura del proyecto e interfaz inicial." wrapText="true"/>
-    <Label text="La simulación todavía no está implementada." wrapText="true"/>
-</VBox>
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="gt.edu.cunoc.redxela.controlador.VistaPrincipalController"
+            stylesheets="@estilos.css">
+    <top>
+        <VBox spacing="5" styleClass="encabezado">
+            <Label text="REDXela" styleClass="marca"/>
+            <Label text="Centro de distribución · Clientes y pedidos" styleClass="subtitulo"/>
+        </VBox>
+    </top>
+    <center>
+        <TabPane fx:id="pestañas" tabClosingPolicy="UNAVAILABLE">
+            <tabs>
+                <Tab text="Pedidos">
+                    <VBox spacing="10" styleClass="contenido">
+                        <HBox alignment="CENTER_LEFT" spacing="12">
+                            <Label text="Nuevo pedido" styleClass="titulo"/>
+                            <Pane HBox.hgrow="ALWAYS"/>
+                            <Button text="Registrar cliente" onAction="#irAClientes"/>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="12">
+                            <Label text="Cliente"/>
+                            <ComboBox fx:id="clientePedido" promptText="Selecciona un cliente" prefWidth="410"/>
+                            <Label text="Servicio:"/>
+                            <Label fx:id="servicioPedido" text="Sin cliente seleccionado" styleClass="destacado"/>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="10">
+                            <Label text="Producto"/>
+                            <ComboBox fx:id="productoPedido" prefWidth="340"/>
+                            <Label text="Cantidad"/>
+                            <TextField fx:id="cantidadPedido" text="1" prefWidth="85" onAction="#agregarProducto"/>
+                            <Button text="Agregar producto" onAction="#agregarProducto"/>
+                            <Button fx:id="quitarProducto" text="Quitar seleccionado" onAction="#quitarProducto"/>
+                        </HBox>
+                        <TableView fx:id="tablaDetalles" prefHeight="135" minHeight="95"/>
+                        <HBox alignment="CENTER_LEFT" spacing="12">
+                            <Label fx:id="totalArticulos" text="Total: 0 artículos" styleClass="destacado"/>
+                            <Pane HBox.hgrow="ALWAYS"/>
+                            <Button text="Registrar pedido" onAction="#registrarPedido" styleClass="primario"/>
+                        </HBox>
+                        <Label fx:id="mensajePedidos" text="Selecciona un cliente y agrega los productos que necesita." wrapText="true" styleClass="mensaje"/>
+                        <Separator/>
+                        <HBox alignment="CENTER_LEFT" spacing="12">
+                            <Label text="Pedidos registrados" styleClass="titulo"/>
+                            <Label text="Orden de llegada" styleClass="mensaje"/>
+                            <Pane HBox.hgrow="ALWAYS"/>
+                            <Button fx:id="verDetalle" text="Ver detalle" onAction="#verDetalle"/>
+                        </HBox>
+                        <TableView fx:id="tablaPedidos" minHeight="105" VBox.vgrow="ALWAYS"/>
+                    </VBox>
+                </Tab>
+                <Tab fx:id="pestañaClientes" text="Clientes">
+                    <VBox spacing="14" styleClass="contenido">
+                        <Label text="Cuenta de cliente" styleClass="titulo"/>
+                        <Label text="Registra al cliente y selecciona el servicio que se aplicará a sus pedidos." wrapText="true"/>
+                        <GridPane hgap="14" vgap="12">
+                            <columnConstraints>
+                                <ColumnConstraints minWidth="120"/>
+                                <ColumnConstraints minWidth="380" hgrow="ALWAYS"/>
+                            </columnConstraints>
+                            <Label text="Nombre" GridPane.rowIndex="0"/>
+                            <TextField fx:id="nombreCliente" promptText="Nombre del cliente" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                            <Label text="Correo" GridPane.rowIndex="1"/>
+                            <TextField fx:id="correoCliente" promptText="nombre@dominio.com" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                            <Label text="Nivel de servicio" GridPane.rowIndex="2"/>
+                            <ComboBox fx:id="nivelCliente" prefWidth="250" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                        </GridPane>
+                        <Button text="Crear cuenta" onAction="#registrarCliente" styleClass="primario"/>
+                        <Label fx:id="mensajeClientes" text="El correo identifica la cuenta y no puede repetirse." wrapText="true" styleClass="mensaje"/>
+                        <Separator/>
+                        <Label text="Clientes registrados" styleClass="titulo"/>
+                        <TableView fx:id="tablaClientes" minHeight="120" VBox.vgrow="ALWAYS"/>
+                    </VBox>
+                </Tab>
+            </tabs>
+        </TabPane>
+    </center>
+    <bottom>
+        <Label text="Datos de esta sesión: al cerrar se eliminan las cuentas y los pedidos. El procesamiento de pedidos aún no está disponible."
+               wrapText="true" styleClass="pie" maxWidth="Infinity"/>
+    </bottom>
+</BorderPane>

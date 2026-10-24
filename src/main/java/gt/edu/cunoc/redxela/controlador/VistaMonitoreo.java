@@ -22,14 +22,16 @@ final class VistaMonitoreo extends VBox {
 
     VistaMonitoreo(ContextoCentro centro, Runnable administrar, Runnable historial) {
         this.centro = centro; setSpacing(24); getStyleClass().add("pagina");
-        TilePane indicadores = new TilePane(18, 18);
+        GridPane indicadores = new GridPane(); indicadores.setHgap(18); indicadores.setVgap(18);
         indicadores.getChildren().addAll(kpi("✓", completados, "PEDIDOS COMPLETADOS", texto("Despachos de la sesión", "muted")),
                 kpi("◷", espera, "TIEMPO PROM. ESPERA", texto("Minutos simulados", "muted")),
                 kpi("◉", ocupados, "RECURSOS EN USO", media),
                 kpi("⚠", deadlocks, "DEADLOCKS ACTIVOS", texto("Espera circular", "dato-rojo")));
         indicadores.widthProperty().addListener((o,a,w) -> {
             int columnas = w.doubleValue() < 750 ? 2 : 4;
-            indicadores.setPrefTileWidth((w.doubleValue() - 18 * (columnas - 1)) / columnas);
+            indicadores.getColumnConstraints().clear();
+            for(int i=0;i<columnas;i++) { ColumnConstraints c=new ColumnConstraints(); c.setPercentWidth(100.0/columnas); c.setMinWidth(0); indicadores.getColumnConstraints().add(c); }
+            for(int i=0;i<indicadores.getChildren().size();i++) { GridPane.setColumnIndex(indicadores.getChildren().get(i),i%columnas); GridPane.setRowIndex(indicadores.getChildren().get(i),i/columnas); }
         });
         TilePane recursos = new TilePane(12, 12);
         recursos.widthProperty().addListener((o,a,w) -> recursos.setPrefTileWidth(Math.max(175, (w.doubleValue() - 12) / 2)));

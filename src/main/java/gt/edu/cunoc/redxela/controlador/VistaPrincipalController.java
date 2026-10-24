@@ -1,205 +1,93 @@
 package gt.edu.cunoc.redxela.controlador;
 
-import gt.edu.cunoc.redxela.catalogo.CatalogoProductos;
-import gt.edu.cunoc.redxela.modelo.*;
-import gt.edu.cunoc.redxela.servicio.RegistroClientes;
-import gt.edu.cunoc.redxela.servicio.RegistroPedidos;
-import java.util.List;
-import java.util.function.Function;
-import javafx.beans.property.ReadOnlyStringWrapper;
-import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
+import gt.edu.cunoc.redxela.servicio.*;
+import javafx.animation.*;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.util.Duration;
+import static gt.edu.cunoc.redxela.controlador.Componentes.*;
 
-/** Conecta los formularios con los registros de la sesión, sin procesar pedidos. */
-public final class VistaPrincipalController {
-    private final RegistroClientes clientes = new RegistroClientes();
-    private final RegistroPedidos pedidos = new RegistroPedidos(clientes);
-    private final ObservableList<DetallePedido> borrador = FXCollections.observableArrayList();
+/** Navegación común y actualización de instantáneas exclusivamente en el hilo JavaFX. */
+public final class VistaPrincipalController implements AutoCloseable {
+    private final ContextoCentro centro = new ContextoCentro();
+    private VistaMonitoreo monitoreo;
+    private VistaInventario inventario;
+    private VistaAdministracion administracion;
+    private Timeline refresco;
+    private FadeTransition pulso;
+    private int pagina;
+    @FXML private ScrollPane contenido;
+    @FXML private Label titulo, estado, capacidad, entorno, aviso;
+    @FXML private ProgressBar barraCapacidad;
+    @FXML private Button navMonitoreo, navInventario, navAdmin, iniciar;
+    @FXML private ComboBox<String> velocidad;
 
-    @FXML private TabPane pestañas;
-    @FXML private Tab pestañaClientes;
-    @FXML private TextField nombreCliente;
-    @FXML private TextField correoCliente;
-    @FXML private ComboBox<NivelServicio> nivelCliente;
-    @FXML private TableView<Cliente> tablaClientes;
-    @FXML private Label mensajeClientes;
-    @FXML private ComboBox<Cliente> clientePedido;
-    @FXML private Label servicioPedido;
-    @FXML private ComboBox<Producto> productoPedido;
-    @FXML private TextField cantidadPedido;
-    @FXML private TableView<DetallePedido> tablaDetalles;
-    @FXML private Label totalArticulos;
-    @FXML private Label mensajePedidos;
-    @FXML private TableView<Pedido> tablaPedidos;
-    @FXML private Button quitarProducto;
-    @FXML private Button verDetalle;
-
-    @FXML
-    private void initialize() {
-        nivelCliente.getItems().setAll(NivelServicio.values());
-        nivelCliente.setValue(NivelServicio.ESTANDAR);
-        productoPedido.getItems().setAll(CatalogoProductos.getProductos());
-        productoPedido.getSelectionModel().selectFirst();
-        clientePedido.valueProperty().addListener((observable, anterior, cliente) -> {
-            servicioPedido.setText(cliente == null ? "Sin cliente seleccionado" : cliente.nivelServicio().toString());
-            mensajePedidos.setText("Selecciona un cliente y agrega los productos que necesita.");
-            mensajePedidos.getStyleClass().setAll("mensaje");
-        });
-        tablaClientes.getColumns().add(columna("Nombre", Cliente::nombre, 230));
-        tablaClientes.getColumns().add(columna("Correo", Cliente::correo, 310));
-        tablaClientes.getColumns().add(columna("Servicio", cliente -> cliente.nivelServicio().toString(), 160));
-        tablaDetalles.getColumns().add(columna("Producto", detalle -> detalle.producto().toString(), 410));
-        tablaDetalles.getColumns().add(columna("Mercancía", detalle -> detalle.producto().tipoMercancia().toString(), 190));
-        tablaDetalles.getColumns().add(columna("Unidades", detalle -> Integer.toString(detalle.cantidad()), 100));
-        tablaDetalles.setItems(borrador);
-        borrador.addListener((ListChangeListener<DetallePedido>) cambio -> actualizarTotal());
-        quitarProducto.disableProperty().bind(tablaDetalles.getSelectionModel().selectedItemProperty().isNull());
-        tablaPedidos.getColumns().add(columna("ID del pedido", pedido -> pedido.id().toString(), 285));
-        tablaPedidos.getColumns().add(columna("Cliente", pedido -> clientes.buscarPorId(pedido.clienteId())
-                .map(Cliente::nombre).orElse("Cliente desconocido"), 190));
-        tablaPedidos.getColumns().add(columna("Servicio", pedido -> pedido.nivelServicio().toString(), 120));
-        tablaPedidos.getColumns().add(columna("Unidades", pedido -> Integer.toString(pedido.getTotalArticulos()), 85));
-        tablaPedidos.getColumns().add(columna("Estado", pedido -> pedido.estado().toString(), 180));
-        verDetalle.disableProperty().bind(tablaPedidos.getSelectionModel().selectedItemProperty().isNull());
-        // La tabla conserva el orden de llegada hasta incorporar la planificación.
-        tablaClientes.setPlaceholder(new Label("Todavía no hay clientes registrados."));
-        tablaDetalles.setPlaceholder(new Label("Agrega los productos del pedido."));
-        tablaPedidos.setPlaceholder(new Label("Todavía no hay pedidos registrados."));
+    @FXML private void initialize() {
+        monitoreo = new VistaMonitoreo(centro, this::administrar, this::historial);
+        inventario = new VistaInventario(centro);
+        administracion = new VistaAdministracion(centro);
+        velocidad.getItems().setAll("0.5x","1.0x","2.0x","4.0x","8.0x"); velocidad.setValue("1.0x");
+        velocidad.setOnAction(e -> centro.motor.velocidad(Double.parseDouble(velocidad.getValue().replace("x",""))));
+        entorno.setText(System.getProperty("os.name")+"  ·  JVM "+Runtime.version().feature()+"  ·  1s = 1min simulado a 1x");
+        pulso = new FadeTransition(Duration.seconds(1.2), estado); pulso.setFromValue(1);pulso.setToValue(.5);
+        pulso.setAutoReverse(true);pulso.setCycleCount(Animation.INDEFINITE);
+        refresco = new Timeline(new KeyFrame(Duration.millis(350),e->actualizar()));refresco.setCycleCount(Animation.INDEFINITE);
+        mostrar(0);refresco.play();
     }
-
-    private <T> TableColumn<T, String> columna(String titulo, Function<T, String> valor, double ancho) {
-        TableColumn<T, String> columna = new TableColumn<>(titulo);
-        columna.setCellValueFactory(celda -> new ReadOnlyStringWrapper(valor.apply(celda.getValue())));
-        columna.setPrefWidth(ancho);
-        columna.setSortable(false);
-        return columna;
+    @FXML private void monitorear() { mostrar(0); }
+    @FXML private void almacenar() { mostrar(1); }
+    @FXML private void administrar() { mostrar(2); }
+    @FXML private void recepcionar() { mostrar(2); administracion.enfocarRecepcion(); }
+    private void mostrar(int numero) {
+        pagina=numero; Node vista=numero==0?monitoreo:numero==1?inventario:administracion;
+        contenido.setContent(vista);contenido.setVvalue(0);
+        titulo.setText(numero==0?"Panel de Control General":numero==1?"Administración de Almacenamiento":"Centro de Control Administrativo");
+        for(Button boton:new Button[]{navMonitoreo,navInventario,navAdmin})boton.getStyleClass().remove("seleccionado");
+        (numero==0?navMonitoreo:numero==1?navInventario:navAdmin).getStyleClass().add("seleccionado");
+        actualizar();
     }
-
-    @FXML
-    private void registrarCliente() {
-        try {
-            if (nivelCliente.getValue() == null) {
-                throw new IllegalArgumentException("Selecciona un nivel de servicio.");
-            }
-            Cliente cliente = clientes.registrar(nombreCliente.getText(), correoCliente.getText(), nivelCliente.getValue());
-            tablaClientes.getItems().setAll(clientes.getClientes());
-            clientePedido.getItems().setAll(clientes.getClientes());
-            clientePedido.setValue(cliente);
-            nombreCliente.clear();
-            correoCliente.clear();
-            mostrarMensaje(mensajeClientes, "Cuenta registrada para " + cliente.nombre() + ". Ya puedes crear sus pedidos.", false);
-        } catch (IllegalArgumentException exception) {
-            mostrarMensaje(mensajeClientes, exception.getMessage(), true);
-        }
+    @FXML private void alternar() {
+        boolean activa=!centro.motor.activa(); centro.motor.activar(activa);
+        if(activa)pulso.play();else{pulso.stop();estado.setOpacity(1);}
+        actualizar();
     }
-
-    @FXML
-    private void irAClientes() {
-        pestañas.getSelectionModel().select(pestañaClientes);
-        nombreCliente.requestFocus();
+    @FXML private void paso() {
+        try{centro.motor.paso();aviso.setText("Avance de un minuto simulado.");}
+        catch(IllegalArgumentException ex){aviso.setText(ex.getMessage());}
+        actualizar();
     }
-
-    @FXML
-    private void agregarProducto() {
-        try {
-            Producto producto = productoPedido.getValue();
-            if (producto == null) {
-                throw new IllegalArgumentException("Selecciona un producto del catálogo.");
-            }
-            int cantidad;
-            try {
-                cantidad = Integer.parseInt(cantidadPedido.getText().strip());
-            } catch (NumberFormatException exception) {
-                throw new IllegalArgumentException("La cantidad debe ser un número entero entre 1 y " + Integer.MAX_VALUE + ".");
-            }
-            DetallePedido nuevo = new DetallePedido(producto, cantidad);
-            long total = borrador.stream().mapToLong(DetallePedido::cantidad).sum() + cantidad;
-            if (total > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException("La cantidad total de artículos es demasiado grande.");
-            }
-            // Consolida productos repetidos antes de enviar el pedido al registro.
-            int indice = -1;
-            for (int i = 0; i < borrador.size(); i++) {
-                if (borrador.get(i).producto().codigo().equals(producto.codigo())) {
-                    indice = i;
-                    break;
-                }
-            }
-            if (indice >= 0) {
-                nuevo = new DetallePedido(producto, borrador.get(indice).cantidad() + cantidad);
-                borrador.set(indice, nuevo);
-            } else {
-                borrador.add(nuevo);
-            }
-            cantidadPedido.setText("1");
-            mostrarMensaje(mensajePedidos, "Producto agregado al pedido.", false);
-        } catch (IllegalArgumentException exception) {
-            mostrarMensaje(mensajePedidos, exception.getMessage(), true);
-        }
+    private void actualizar() {
+        boolean activa=centro.motor.activa(); estado.setText(activa?(centro.estres()?"● STRESS TEST ACTIVO":"● SIMULACIÓN ACTIVA"):"● SIMULACIÓN PAUSADA");
+        estado.getStyleClass().setAll("estado-sesion",activa?"exito":"muted");
+        iniciar.setText(activa?"Ⅱ":"▶");iniciar.setTooltip(new Tooltip(activa?"Pausar simulación":"Iniciar o reanudar simulación"));
+        var resumen=centro.almacen.resumen();double porcentaje=(double)resumen.unidades()/resumen.capacidad();
+        capacidad.setText("%.0f%%".formatted(porcentaje*100));barraCapacidad.setProgress(porcentaje);
+        if(pagina==0)monitoreo.actualizar();else if(pagina==1)inventario.actualizar();else administracion.actualizar();
     }
-
-    @FXML
-    private void quitarProducto() {
-        DetallePedido seleccionado = tablaDetalles.getSelectionModel().getSelectedItem();
-        if (seleccionado != null) {
-            borrador.remove(seleccionado);
-            mostrarMensaje(mensajePedidos, "Producto quitado del pedido.", false);
-        }
+    @FXML private void historial() {
+        TableView<MotorSimulacion.VistaPedido> tabla=new TableView<>();
+        tabla.getColumns().add(columna("ID del pedido",v->v.pedido().id().toString(),285));
+        tabla.getColumns().add(columna("Cliente",v->centro.clientes.buscarPorId(v.pedido().clienteId()).orElseThrow().nombre(),200));
+        tabla.getColumns().add(columna("Servicio",v->v.pedido().nivelServicio().toString(),120));
+        tabla.getColumns().add(columna("Estado",v->v.estado().toString(),160));
+        tabla.getColumns().add(columna("Unidades",v->Integer.toString(v.pedido().getTotalArticulos()),80));
+        tabla.getColumns().add(columna("Productos",v->v.pedido().detalles().stream().map(d->d.producto().nombre()+" ×"+d.cantidad()).collect(java.util.stream.Collectors.joining(", ")),300));
+        tabla.getItems().setAll(centro.motor.pedidos());tabla.setPrefSize(1000,450);
+        tabla.setPlaceholder(texto("Todavía no se han registrado pedidos.","muted"));
+        dialogo("Historial de pedidos · instantánea actual",tabla,contenido);
     }
-
-    @FXML
-    private void registrarPedido() {
-        try {
-            Cliente cliente = clientePedido.getValue();
-            if (cliente == null) {
-                throw new IllegalArgumentException("Selecciona un cliente o registra una cuenta en Clientes.");
-            }
-            Pedido pedido = pedidos.registrar(cliente.id(), List.copyOf(borrador));
-            tablaPedidos.getItems().setAll(pedidos.getPedidos());
-            tablaPedidos.getSelectionModel().select(pedido);
-            borrador.clear();
-            mostrarMensaje(mensajePedidos, "Pedido registrado: " + pedido.getTotalArticulos() + " artículos para " + cliente.nombre() + ".", false);
-        } catch (IllegalArgumentException exception) {
-            mostrarMensaje(mensajePedidos, exception.getMessage(), true);
-        }
+    @FXML private void depurar() {
+        StringBuilder registro=new StringBuilder("RECURSOS COMPARTIDOS\n");
+        centro.recursos.estados().forEach(r->registro.append(r.tipo()).append(" ").append(r.numero()).append(" → ")
+                .append(r.disponible()?"Disponible":r.titular()).append("\n"));
+        registro.append("\nRECEPCIÓN\n");centro.recepcion.historial().forEach(r->registro.append(r.entrada().id()).append(" → ").append(r.estado()).append("\n"));
+        registro.append("\nCONFLICTOS\n").append(centro.conflictos.vista().mensaje());
+        TextArea area=new TextArea(registro.toString());area.setEditable(false);area.setPrefSize(760,480);area.getStyleClass().add("mono");
+        dialogo("Estado interno de la sesión",area,contenido);
     }
-
-    @FXML
-    private void verDetalle() {
-        Pedido pedido = tablaPedidos.getSelectionModel().getSelectedItem();
-        if (pedido == null) {
-            return;
-        }
-        StringBuilder contenido = new StringBuilder("ID: ").append(pedido.id())
-                .append("\nCliente: ").append(clientes.buscarPorId(pedido.clienteId()).orElseThrow())
-                .append("\nServicio: ").append(pedido.nivelServicio())
-                .append("\nEstado: ").append(pedido.estado()).append("\n\n");
-        for (DetallePedido detalle : pedido.detalles()) {
-            contenido.append(detalle.producto()).append(" — ").append(detalle.cantidad())
-                    .append(detalle.cantidad() == 1 ? " unidad\n" : " unidades\n");
-        }
-        contenido.append("\nTotal: ").append(pedido.getTotalArticulos()).append(" artículos");
-        Alert detalle = new Alert(Alert.AlertType.INFORMATION);
-        detalle.initOwner(tablaPedidos.getScene().getWindow());
-        detalle.setTitle("Detalle del pedido");
-        detalle.setHeaderText("Pedido registrado");
-        TextArea texto = new TextArea(contenido.toString());
-        texto.setEditable(false);
-        texto.setWrapText(true);
-        texto.setPrefSize(560, 300);
-        detalle.getDialogPane().setContent(texto);
-        detalle.showAndWait();
-    }
-
-    private void actualizarTotal() {
-        totalArticulos.setText("Total: " + borrador.stream().mapToLong(DetallePedido::cantidad).sum() + " artículos");
-    }
-
-    private void mostrarMensaje(Label destino, String texto, boolean error) {
-        destino.setText(texto);
-        destino.getStyleClass().setAll("mensaje", error ? "error" : "exito");
+    @Override public void close() {
+        if(refresco!=null)refresco.stop();if(pulso!=null)pulso.stop();
+        if(monitoreo!=null)monitoreo.detenerAnimaciones();centro.close();
     }
 }

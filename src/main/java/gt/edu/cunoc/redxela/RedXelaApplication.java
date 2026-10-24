@@ -8,24 +8,35 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.stage.Stage;
+import javafx.scene.text.Font;
+import gt.edu.cunoc.redxela.controlador.VistaPrincipalController;
 
 /** Punto de entrada de la aplicación de escritorio REDXela. */
 public class RedXelaApplication extends Application {
+    private VistaPrincipalController controlador;
 
     @Override
     public void start(Stage stage) {
         try {
+            for (String fuente : new String[]{"Inter-Regular", "Inter-Bold", "JetBrainsMono-Regular", "JetBrainsMono-Bold"}) {
+                try (var archivo = RedXelaApplication.class.getResourceAsStream("/gt/edu/cunoc/redxela/fuentes/" + fuente + ".ttf")) {
+                    if (archivo != null) Font.loadFont(archivo, 12);
+                }
+            }
             URL vista = RedXelaApplication.class.getResource("/gt/edu/cunoc/redxela/vista-principal.fxml");
             if (vista == null) {
                 throw new IOException("No se encontró el archivo de la vista principal.");
             }
             // FXML mantiene la estructura visual separada del código Java.
-            Scene scene = new Scene(new FXMLLoader(vista).load(), 1120, 680);
+            FXMLLoader cargador = new FXMLLoader(vista);
+            Scene scene = new Scene(cargador.load(), 1320, 820);
+            controlador = cargador.getController();
             stage.setTitle("REDXela - Simulador de distribución");
             stage.setMinWidth(1050);
             stage.setMinHeight(680);
             stage.setScene(scene);
             stage.show();
+            stage.setMaximized(true);
         } catch (IOException exception) {
             System.err.println("No se pudo cargar la interfaz: " + exception.getMessage());
             Alert error = new Alert(Alert.AlertType.ERROR);
@@ -40,4 +51,6 @@ public class RedXelaApplication extends Application {
     public static void main(String[] args) {
         launch(args);
     }
+
+    @Override public void stop() { if (controlador != null) controlador.close(); }
 }

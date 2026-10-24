@@ -66,7 +66,7 @@ final class VistaAdministracion extends VBox {
                         boton("Quitar","boton-secundario",()->detalles.getItems().remove(detalles.getSelectionModel().getSelectedItem())),espacio(),total),
                 detalles,inyectar,mensajePedido);
         provocar=boton("Provocar espera circular","boton-secundario",()->{
-            try{centro.conflictos.provocar();}catch(IllegalArgumentException ex){mensaje(conflicto,ex.getMessage(),true);}
+            try{centro.conflictos.provocar();conflicto.getStyleClass().setAll("muted");}catch(IllegalArgumentException ex){mensaje(conflicto,ex.getMessage(),true);}
         });
         resolverA=boton("CONTINUAR A", "boton-rojo",()->resolver(true));
         resolverB=boton("CONTINUAR B", "boton-secundario",()->resolver(false));
@@ -126,12 +126,13 @@ final class VistaAdministracion extends VBox {
         })); dialogo("Cuenta de cliente",formulario,this);
     }
     private void resolver(boolean a) {
-        try{centro.conflictos.resolver(a);}catch(IllegalArgumentException ex){mensaje(conflicto,ex.getMessage(),true);}
+        try{centro.conflictos.resolver(a);conflicto.getStyleClass().setAll("muted");}catch(IllegalArgumentException ex){mensaje(conflicto,ex.getMessage(),true);}
     }
     private void priorizar() {
         var antiguo=centro.motor.espera().stream().max(Comparator.comparingDouble(MotorSimulacion.VistaPedido::espera));
         if(antiguo.isEmpty()){alertaEspera.setText("No hay pedidos en espera.");return;}
-        centro.motor.priorizar(antiguo.get().pedido().id()); alertaEspera.setText("Prioridad manual aplicada al pedido más antiguo.");
+        try{centro.motor.priorizar(antiguo.get().pedido().id()); alertaEspera.setText("Prioridad manual aplicada al pedido más antiguo.");}
+        catch(IllegalArgumentException ex){alertaEspera.setText(ex.getMessage());}
     }
     void actualizar() {
         var vista=centro.conflictos.vista();

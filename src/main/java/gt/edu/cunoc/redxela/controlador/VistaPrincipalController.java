@@ -12,10 +12,12 @@ import static gt.edu.cunoc.redxela.controlador.Componentes.*;
 
 /** Mantiene destinos independientes y una navegación lateral estable. */
 public final class VistaPrincipalController implements AutoCloseable {
-    private enum Pagina { MONITOREO, PEDIDO, HISTORIAL, INVENTARIO, RECEPCION, CONFLICTOS, DEPURACION }
+    private enum Pagina { MONITOREO, PEDIDO, CLIENTES, HISTORIAL, INVENTARIO, RECEPCION, CONFLICTOS, DEPURACION }
     private final ContextoCentro centro=new ContextoCentro();
     private VistaMonitoreo monitoreo;
     private VistaInventario inventario;
+    private VistaPedido pedido;
+    private VistaClientes clientes;
     private VistasOperativas operaciones;
     private TableView<MotorSimulacion.VistaPedido> tablaPedidos;
     private TextArea registro;
@@ -28,7 +30,7 @@ public final class VistaPrincipalController implements AutoCloseable {
     @FXML private Label titulo, estado, capacidad, entorno, aviso, pie;
     @FXML private ProgressBar barraCapacidad;
     @FXML private Button navMonitoreo, navPedidos, navInventario, navAdmin, iniciar, pausar, avanzar;
-    @FXML private Button subNuevo, subHistorial, subMapa, subRecepcion, subConflictos, subDepurar;
+    @FXML private Button subNuevo, subClientes, subHistorial, subMapa, subRecepcion, subConflictos, subDepurar;
     @FXML private HBox controlesMonitoreo, controlesInventario, controlesAdmin;
     @FXML private ToggleButton estandar, estres;
     @FXML private ComboBox<String> velocidad;
@@ -37,9 +39,11 @@ public final class VistaPrincipalController implements AutoCloseable {
         monitoreo=new VistaMonitoreo(centro,this::administrar,this::historial);
         inventario=new VistaInventario(centro);
         operaciones=new VistasOperativas(centro);
+        pedido=new VistaPedido(centro,this::gestionarClientes);
+        clientes=new VistaClientes(centro,cuenta->{pedido.seleccionarCliente(cuenta);nuevoPedido();});
         monitoreo.getChildren().add(0,controlesAdmin);
         crearHistorial();crearDepuracion();
-        submenus=Map.of(Pagina.PEDIDO,subNuevo,Pagina.HISTORIAL,subHistorial,Pagina.INVENTARIO,subMapa,
+        submenus=Map.of(Pagina.PEDIDO,subNuevo,Pagina.CLIENTES,subClientes,Pagina.HISTORIAL,subHistorial,Pagina.INVENTARIO,subMapa,
                 Pagina.RECEPCION,subRecepcion,Pagina.CONFLICTOS,subConflictos,Pagina.DEPURACION,subDepurar);
         controlesInventario.getChildren().setAll(inventario.controles());
         ToggleGroup modos=new ToggleGroup();estandar.setToggleGroup(modos);estres.setToggleGroup(modos);estandar.setSelected(true);
@@ -53,6 +57,7 @@ public final class VistaPrincipalController implements AutoCloseable {
     }
     @FXML private void monitorear(){mostrar(Pagina.MONITOREO);}
     @FXML private void nuevoPedido(){mostrar(Pagina.PEDIDO);}
+    @FXML private void gestionarClientes(){mostrar(Pagina.CLIENTES);}
     @FXML private void historial(){mostrar(Pagina.HISTORIAL);}
     @FXML private void almacenar(){mostrar(Pagina.INVENTARIO);}
     @FXML private void recepcionar(){mostrar(Pagina.RECEPCION);}
@@ -62,13 +67,13 @@ public final class VistaPrincipalController implements AutoCloseable {
     private void mostrar(Pagina destino) {
         pagina=destino;
         Node vista=switch(destino){
-            case MONITOREO->monitoreo;case INVENTARIO->inventario;case PEDIDO->envolver(operaciones.pedido());
+            case MONITOREO->monitoreo;case INVENTARIO->inventario;case PEDIDO->pedido;case CLIENTES->clientes;
             case RECEPCION->envolver(operaciones.recepcion());case CONFLICTOS->envolver(operaciones.conflictos());
             case HISTORIAL->paginaHistorial;case DEPURACION->paginaDepuracion;
         };
         contenido.setContent(vista);contenido.setVvalue(0);aviso.setText("");
         titulo.setText(switch(destino){
-            case MONITOREO->"Panel de Control General";case PEDIDO->"Nuevo pedido";case HISTORIAL->"Historial de pedidos";
+            case MONITOREO->"Panel de Control General";case PEDIDO->"Nuevo pedido";case CLIENTES->"Cuentas de clientes";case HISTORIAL->"Historial de pedidos";
             case INVENTARIO->"Almacén y existencias";case RECEPCION->"Recepción de mercadería";
             case CONFLICTOS->"Resolución de conflictos";case DEPURACION->"Depuración de recursos";
         });
@@ -79,7 +84,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         for(Button boton:new Button[]{navMonitoreo,navPedidos,navInventario,navAdmin})boton.getStyleClass().remove("seleccionado");
         submenus.values().forEach(b->b.getStyleClass().remove("seleccionado"));
         Button principal=switch(destino){
-            case MONITOREO->navMonitoreo;case PEDIDO,HISTORIAL->navPedidos;
+            case MONITOREO->navMonitoreo;case PEDIDO,CLIENTES,HISTORIAL->navPedidos;
             case INVENTARIO,RECEPCION->navInventario;case CONFLICTOS,DEPURACION->navAdmin;
         };
         principal.getStyleClass().add("seleccionado");
@@ -114,7 +119,8 @@ public final class VistaPrincipalController implements AutoCloseable {
         capacidad.setText("%.0f%%".formatted(porcentaje*100));barraCapacidad.setProgress(porcentaje);
         switch(pagina){
             case MONITOREO->monitoreo.actualizar();case INVENTARIO->inventario.actualizar();
-            case PEDIDO,RECEPCION,CONFLICTOS->operaciones.actualizar();
+            case PEDIDO->pedido.actualizar();case CLIENTES->clientes.actualizar();
+            case RECEPCION,CONFLICTOS->operaciones.actualizar();
             case HISTORIAL->actualizarHistorial();case DEPURACION->actualizarRegistro();
         }
     }

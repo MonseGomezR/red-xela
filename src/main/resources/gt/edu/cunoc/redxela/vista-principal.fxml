@@ -12,6 +12,7 @@
   <Button fx:id="navPedidos" text="Pedidos" onAction="#nuevoPedido" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-shopping-cart" iconSize="19"/></graphic></Button>
   <VBox spacing="2" styleClass="submenu">
    <Button fx:id="subNuevo" text="Nuevo pedido" onAction="#nuevoPedido" maxWidth="Infinity" styleClass="nav,subnav"/>
+   <Button fx:id="subClientes" text="Cuentas de clientes" onAction="#gestionarClientes" maxWidth="Infinity" styleClass="nav,subnav"/>
    <Button fx:id="subHistorial" text="Historial de pedidos" onAction="#historial" maxWidth="Infinity" styleClass="nav,subnav"/>
   </VBox>
   <Button fx:id="navInventario" text="Inventario" onAction="#almacenar" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-archive" iconSize="19"/></graphic></Button>

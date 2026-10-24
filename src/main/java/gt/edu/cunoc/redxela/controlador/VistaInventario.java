@@ -41,7 +41,8 @@ final class VistaInventario extends VBox {
                 tarjeta(texto("FRAGMENTACIÓN","etiqueta"),fragmentacion,texto("Espacio libre fuera del mayor bloque","muted")));
         datos.getChildren().forEach(n -> { HBox.setHgrow(n,Priority.ALWAYS); ((Region)n).setPrefWidth(0); });
         mapa.setSpacing(46);
-        VBox izquierda = new VBox(64, mapa, datos, mensaje);
+        VBox izquierda = new VBox(48, mapa, datos,
+                parrafo("Existencias iniciales de simulación: "+ContextoCentro.EXISTENCIAS_INICIALES_POR_PRODUCTO+" unidades por producto.","muted"),mensaje);
         buscar.setPromptText("Buscar producto, código o categoría..."); buscar.textProperty().addListener((o,a,b)->actualizarCatalogo());
         ScrollPane lista=desplazable(catalogo);lista.setPrefHeight(425);
         HBox busqueda=fila(icono(Feather.SEARCH,17),buscar);HBox.setHgrow(buscar,Priority.ALWAYS);

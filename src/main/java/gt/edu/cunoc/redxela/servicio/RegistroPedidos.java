@@ -3,7 +3,6 @@ package gt.edu.cunoc.redxela.servicio;
 import gt.edu.cunoc.redxela.catalogo.CatalogoProductos;
 import gt.edu.cunoc.redxela.modelo.DetallePedido;
 import gt.edu.cunoc.redxela.modelo.Pedido;
-import gt.edu.cunoc.redxela.modelo.NivelServicio;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -21,14 +20,7 @@ public final class RegistroPedidos {
     public synchronized Pedido registrar(UUID clienteId, List<DetallePedido> detalles) {
         var cliente = clientes.buscarPorId(clienteId)
                 .orElseThrow(() -> new IllegalArgumentException("Selecciona un cliente registrado."));
-        return registrar(clienteId, cliente.nivelServicio(), detalles);
-    }
-
-    /** El panel manual permite contratar un servicio específico para ese pedido. */
-    public synchronized Pedido registrar(UUID clienteId, NivelServicio servicio, List<DetallePedido> detalles) {
-        var cliente = clientes.buscarPorId(clienteId)
-                .orElseThrow(() -> new IllegalArgumentException("Selecciona un cliente registrado."));
-        Pedido pedido = Pedido.crear(cliente.id(), servicio, detalles);
+        Pedido pedido = Pedido.crear(cliente.id(), cliente.nivelServicio(), detalles);
         for (DetallePedido detalle : pedido.detalles()) {
             boolean productoValido = CatalogoProductos.buscarPorCodigo(detalle.producto().codigo())
                     .filter(detalle.producto()::equals).isPresent();

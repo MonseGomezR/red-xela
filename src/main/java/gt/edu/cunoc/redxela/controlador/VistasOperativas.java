@@ -11,15 +11,12 @@ import java.util.*;
 import static gt.edu.cunoc.redxela.controlador.Componentes.*;
 
 final class VistasOperativas {
-    private final VBox pedido, recepcion, conflictos;
+    private final VBox recepcion, conflictos;
     private final ContextoCentro centro;
-    private final TextField id=new TextField(), cliente=new TextField(), lote=new TextField();
-    private final ComboBox<NivelServicio> servicio=new ComboBox<>();
+    private final TextField lote=new TextField();
     private final ComboBox<Producto> recibido=new ComboBox<>();
     private final ComboBox<Integer> muelle=new ComboBox<>();
-    private final Slider cantidad=new Slider(1,100,1);
-    private final ToggleGroup tipos=new ToggleGroup();
-    private final Label mensajePedido=parrafo("","muted"), mensajeEntrada=parrafo("","muted"),
+    private final Label mensajeEntrada=parrafo("","muted"),
             conflicto=parrafo("","muted"), alertaEspera=parrafo("","muted"), cuentaConflictos=texto("0 ACTIVOS","badge-rojo"),
             tituloEspera=texto("TIEMPOS DE ESPERA","dato-amarillo"), tituloCiclo=texto("ESTADO DE CONFLICTOS","dato-rojo");
     private final Button terminarA, terminarB, aumentar;
@@ -27,30 +24,7 @@ final class VistasOperativas {
 
     VistasOperativas(ContextoCentro centro) {
         this.centro=centro;
-        id.setText(centro.siguienteIdManual()); cliente.setPromptText("Nombre del cliente...");
-        servicio.getItems().setAll(NivelServicio.values()); servicio.setValue(NivelServicio.ESTANDAR);
-        servicio.setConverter(new StringConverter<>() {
-            public String toString(NivelServicio n){return n==null?"":"N"+n.getPrioridad()+" - "+n;}
-            public NivelServicio fromString(String s){return null;}
-        }); servicio.setMaxWidth(Double.MAX_VALUE);
-        HBox cabecera=campos(campo("ID PEDIDO",id),campo("NIVEL DE SERVICIO",servicio));
-        FlowPane mercancias=new FlowPane(8,8);
-        TipoMercancia[] valores=TipoMercancia.values();
-        String[] nombres=Arrays.stream(valores).map(t->t.toString().toUpperCase(Locale.ROOT)).toArray(String[]::new);
-        for(int i=0;i<valores.length;i++) {
-            ToggleButton b=new ToggleButton(nombres[i]); b.setToggleGroup(tipos); b.setUserData(valores[i]);
-            b.getStyleClass().add("tipo-mercancia"); b.setMaxWidth(Double.MAX_VALUE); HBox.setHgrow(b,Priority.ALWAYS);
-            b.setOnAction(e->{if(tipos.getSelectedToggle()==null)b.setSelected(true);});
-            mercancias.getChildren().add(b); if(i==0)b.setSelected(true);
-        }
-        cantidad.setBlockIncrement(1); cantidad.setMajorTickUnit(1); cantidad.setSnapToTicks(true);
         lote.setPromptText("Cantidad a recibir");
-        Label unidades=texto("1u","dato-cian"); cantidad.valueProperty().addListener((o,a,b)->unidades.setText(Math.round(b.doubleValue())+"u"));
-        Button inyectar=boton("INYECTAR PEDIDO AL SISTEMA","boton-primario",this::inyectar); inyectar.setMaxWidth(Double.MAX_VALUE);
-        pedido=tarjeta(tituloIcono(Feather.SHOPPING_CART,"CREAR PEDIDO MANUAL","titulo-tarjeta"),new Separator(),
-                cabecera,campo("CLIENTE / CUENTA",cliente),campo("TIPO DE MERCANCÍA",mercancias),
-                campo("CANTIDAD DE UNIDADES",new VBox(8,cantidad,fila(texto("1u","mono"),espacio(),unidades,espacio(),texto("100u","mono")))),inyectar,mensajePedido);
-        pedido.getStyleClass().add("formulario-pedido");
         terminarA=boton("CONTINUAR DL-A","boton-rojo",()->resolver(true));
         terminarB=boton("CONTINUAR DL-B","boton-rojo-contorno",()->resolver(false));
         VBox ciclo=tarjeta(tituloCiclo,conflicto,campos(terminarA,terminarB));
@@ -79,7 +53,6 @@ final class VistasOperativas {
                 campo("SELECCIONAR PRODUCTO",recibido),campos(campo("CANTIDAD (LOTE)",lote),campo("MUELLE DE CARGA",muelle)),entrada,mensajeEntrada);
         actualizar();
     }
-    VBox pedido(){return pedido;}
     VBox recepcion(){return recepcion;}
     VBox conflictos(){return conflictos;}
     private VBox campo(String nombre,javafx.scene.Node control){return new VBox(8,texto(nombre,"etiqueta"),control);}
@@ -87,13 +60,6 @@ final class VistasOperativas {
         HBox fila=new HBox(16,elementos);
         for(Region n:elementos){HBox.setHgrow(n,Priority.ALWAYS); n.setMaxWidth(Double.MAX_VALUE);n.setPrefWidth(0);}
         return fila;
-    }
-    private void inyectar() {
-        try {
-            Pedido pedido=centro.registrarManual(id.getText(),cliente.getText(),servicio.getValue(),
-                    (TipoMercancia)tipos.getSelectedToggle().getUserData(),(int)Math.round(cantidad.getValue()));
-            mensaje(mensajePedido,"Pedido #"+centro.identificador(pedido)+" registrado.",false);id.setText(centro.siguienteIdManual());
-        } catch(IllegalArgumentException ex){mensaje(mensajePedido,ex.getMessage(),true);}
     }
     private void resolver(boolean continuaA) {
         try{centro.conflictos.resolver(continuaA);}catch(IllegalArgumentException ex){mensaje(conflicto,ex.getMessage(),true);}

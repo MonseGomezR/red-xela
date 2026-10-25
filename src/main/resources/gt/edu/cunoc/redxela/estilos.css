@@ -146,3 +146,6 @@
 .text-area, .text-area .content { -fx-text-fill: #8b9da3; }
 .dialog-pane, .dialog-pane .header-panel { -fx-background-color: #101515; }
 .tooltip { -fx-background-color: #142020; -fx-text-fill: #dce3e3; -fx-font-family: "JetBrains Mono"; -fx-font-size: 10px; }
+.recurso.bloqueado { -fx-background-color: #b3363e12; -fx-border-color: transparent transparent #782d34 transparent; }
+.recurso.bloqueado .destacado, .recurso.bloqueado .badge { -fx-text-fill: #ff414b; }
+.recurso.bloqueado .ikonli-font-icon { -fx-icon-color: #ff414b; }

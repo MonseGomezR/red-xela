@@ -19,6 +19,13 @@ public final class MotorSimulacion implements AutoCloseable {
         private double inicio;
         private double fin;
         private double progreso;
+        private double inicioFase;
+        private double desdeEspera;
+        private double esperaAcumulada;
+        private double procesoAnterior;
+        private boolean preparado;
+        private boolean despachando;
+        private int numeroConflicto;
         private String fase = "Pendiente";
         private String error = "";
         private boolean preferente;
@@ -26,6 +33,7 @@ public final class MotorSimulacion implements AutoCloseable {
         private Trabajo(Pedido pedido, double llegada, long secuencia) {
             this.pedido = pedido;
             this.llegada = llegada;
+            this.desdeEspera = llegada;
             this.secuencia = secuencia;
         }
     }
@@ -58,6 +66,7 @@ public final class MotorSimulacion implements AutoCloseable {
     private static final long INTERVALO_ESPERA_MILISEGUNDOS = 40;
     private final Almacen almacen;
     private final GestorRecursos recursos;
+    private final MonitorConflictos conflictos;
     private final List<Trabajo> trabajos = new ArrayList<>();
     private final ScheduledExecutorService reloj = Executors.newSingleThreadScheduledExecutor(new FabricaHilos("reloj"));
     private final ExecutorService trabajadores = Executors.newFixedThreadPool(MAXIMO_TRABAJADORES, new FabricaHilos("pedido"));
@@ -72,8 +81,13 @@ public final class MotorSimulacion implements AutoCloseable {
     private PoliticaAtencion politica = PoliticaAtencion.SERVICIO;
 
     public MotorSimulacion(Almacen almacen, GestorRecursos recursos) {
+        this(almacen, recursos, null);
+    }
+
+    public MotorSimulacion(Almacen almacen, GestorRecursos recursos, MonitorConflictos conflictos) {
         this.almacen = almacen;
         this.recursos = recursos;
+        this.conflictos = conflictos;
         reloj.scheduleWithFixedDelay(this::actualizarReloj, 0, INTERVALO_RELOJ_MILISEGUNDOS, TimeUnit.MILLISECONDS);
     }
 
@@ -114,7 +128,8 @@ public final class MotorSimulacion implements AutoCloseable {
                 .filter(candidato -> candidato.pedido.id().equals(id))
                 .findFirst()
                 .orElseThrow();
-        if (trabajo.estado == EstadoPedido.COMPLETADO || trabajo.estado == EstadoPedido.EN_PROCESO) {
+        if (trabajo.estado == EstadoPedido.COMPLETADO || trabajo.estado == EstadoPedido.EN_PROCESO
+                || trabajo.estado == EstadoPedido.EN_CONFLICTO) {
             throw new IllegalArgumentException("Selecciona un pedido que siga en espera.");
         }
         trabajo.preferente = true;
@@ -157,7 +172,8 @@ public final class MotorSimulacion implements AutoCloseable {
     }
 
     private void asignar() {
-        int activos = (int) trabajos.stream().filter(trabajo -> trabajo.estado == EstadoPedido.EN_PROCESO).count();
+        int activos = (int) trabajos.stream().filter(trabajo -> trabajo.estado == EstadoPedido.EN_PROCESO
+                || trabajo.estado == EstadoPedido.EN_CONFLICTO).count();
         List<Trabajo> candidatos = pendientes();
         // Una reserva pendiente no debe anular un cambio de política ni la llegada de mayor prioridad.
         candidatos.forEach(trabajo -> almacen.liberar(trabajo.pedido.id()));
@@ -165,19 +181,27 @@ public final class MotorSimulacion implements AutoCloseable {
             if (activos >= MAXIMO_TRABAJADORES) {
                 break;
             }
+            if (conflictos != null && !conflictos.permiteDespacho(trabajo.pedido.id(), trabajo.numeroConflicto)) {
+                trabajo.estado = EstadoPedido.ESPERANDO_RECURSOS;
+                trabajo.fase = "Reencolado; esperando el despacho del pedido seleccionado";
+                continue;
+            }
             if (!almacen.reservar(trabajo.pedido.id(), trabajo.pedido.detalles())) {
                 trabajo.estado = EstadoPedido.ESPERANDO_INVENTARIO;
                 trabajo.fase = "Sin existencias";
                 continue;
             }
-            if (!recursos.intentar(titular(trabajo), necesidades(trabajo.pedido))) {
+            Map<TipoRecurso, Integer> requeridos = trabajo.preparado ? recursosDespacho() : necesidades(trabajo.pedido);
+            if (!recursos.intentar(titular(trabajo), requeridos)) {
                 trabajo.estado = EstadoPedido.ESPERANDO_RECURSOS;
-                trabajo.fase = "Recursos ocupados";
+                trabajo.fase = trabajo.preparado ? "Esperando recursos de despacho" : "Recursos ocupados";
                 continue;
             }
             trabajo.estado = EstadoPedido.EN_PROCESO;
+            trabajo.esperaAcumulada += minutos - trabajo.desdeEspera;
             trabajo.inicio = minutos;
-            trabajo.fase = "Preparación";
+            trabajo.inicioFase = minutos;
+            trabajo.fase = trabajo.preparado ? "Despacho" : "Preparación";
             activos++;
             trabajadores.submit(() -> procesar(trabajo));
         }
@@ -185,14 +209,28 @@ public final class MotorSimulacion implements AutoCloseable {
 
     private void procesar(Trabajo trabajo) {
         boolean terminado = false;
+        int numeroConflicto = trabajo.numeroConflicto;
         try {
-            avanzar(trabajo, Math.max(1, trabajo.pedido.getTotalArticulos() * 0.25), 0, 0.85);
-            recursos.liberar(titular(trabajo));
-            synchronized (this) {
-                trabajo.fase = "Esperando despacho";
+            if (!trabajo.preparado) {
+                avanzar(trabajo, Math.max(1, trabajo.pedido.getTotalArticulos() * 0.25), 0, 0.85);
+                recursos.liberar(titular(trabajo));
+                synchronized (this) {
+                    trabajo.preparado = true;
+                    trabajo.fase = "Esperando despacho";
+                }
+                if (conflictos != null && conflictos.participa(trabajo.pedido.id(), numeroConflicto)) {
+                    prepararConflictoDespacho(trabajo, numeroConflicto);
+                } else {
+                    esperarRecursosDespacho(trabajo);
+                }
+            } else if (conflictos != null && conflictos.participa(trabajo.pedido.id(), numeroConflicto)) {
+                recursos.liberar(titular(trabajo));
+                prepararConflictoDespacho(trabajo, numeroConflicto);
             }
-            esperarRecursosDespacho(trabajo);
             synchronized (this) {
+                trabajo.estado = EstadoPedido.EN_PROCESO;
+                trabajo.despachando = true;
+                trabajo.inicioFase = minutos;
                 trabajo.fase = "Despacho";
             }
             avanzar(trabajo, 0.6, 0.85, 1);
@@ -215,18 +253,98 @@ public final class MotorSimulacion implements AutoCloseable {
                 recursos.liberar(titular(trabajo));
                 if (!terminado) {
                     almacen.liberar(trabajo.pedido.id());
+                    trabajo.procesoAnterior += minutos - trabajo.inicio;
+                    trabajo.desdeEspera = minutos;
                     trabajo.estado = EstadoPedido.REGISTRADO;
-                    trabajo.progreso = 0;
-                    trabajo.fase = "Reencolado";
+                    trabajo.progreso = trabajo.preparado ? 0.85 : 0;
+                    trabajo.despachando = false;
+                    trabajo.fase = trabajo.preparado ? "Reencolado para despacho" : "Reencolado";
+                }
+            }
+            if (conflictos != null) {
+                conflictos.finalizarIntento(trabajo.pedido.id(), numeroConflicto, terminado);
+            }
+        }
+    }
+
+    private void prepararConflictoDespacho(Trabajo trabajo, int numero) throws InterruptedException {
+        synchronized (this) {
+            trabajo.fase = "Esperando al otro pedido para preparar el conflicto";
+        }
+        conflictos.prepararDespacho(trabajo.pedido.id(), numero);
+        synchronized (this) {
+            trabajo.estado = EstadoPedido.EN_CONFLICTO;
+            trabajo.fase = "Espera circular entre Área de carga 1 y Escáner";
+        }
+        conflictos.esperarDespacho(trabajo.pedido.id(), numero);
+    }
+
+    private Map<TipoRecurso, Integer> recursosDespacho() {
+        return Map.of(TipoRecurso.ESCANER, 1, TipoRecurso.AREA_CARGA, 1);
+    }
+
+    private double tiempoRestante(Trabajo trabajo) {
+        if (trabajo.estado == EstadoPedido.COMPLETADO) {
+            return 0;
+        }
+        if (trabajo.preparado) {
+            return trabajo.despachando ? Math.max(0, 0.6 - (minutos - trabajo.inicioFase)) : 0.6;
+        }
+        double preparacion = Math.max(1, trabajo.pedido.getTotalArticulos() * 0.25);
+        if (trabajo.estado == EstadoPedido.EN_PROCESO) {
+            preparacion = Math.max(0, preparacion - (minutos - trabajo.inicioFase));
+        }
+        return preparacion + 0.6;
+    }
+
+    /** Programa el conflicto sin crear pedidos ni omitir su preparación. */
+    public synchronized void provocarConflicto(UUID pedidoA, UUID pedidoB) {
+        if (cerrada || conflictos == null) {
+            throw new IllegalArgumentException("El monitor de conflictos no está disponible.");
+        }
+        if (pedidoA == null || pedidoB == null || pedidoA.equals(pedidoB)) {
+            throw new IllegalArgumentException("Selecciona dos pedidos pendientes distintos.");
+        }
+        Trabajo trabajoA = buscarPendiente(pedidoA);
+        Trabajo trabajoB = buscarPendiente(pedidoB);
+        Map<Producto, Integer> disponibles = almacen.existencias();
+        for (Trabajo trabajo : trabajos) {
+            if (trabajo.estado == EstadoPedido.EN_PROCESO || trabajo.estado == EstadoPedido.EN_CONFLICTO) {
+                for (DetallePedido detalle : trabajo.pedido.detalles()) {
+                    Producto producto = detalle.producto();
+                    disponibles.put(producto, disponibles.getOrDefault(producto, 0) - detalle.cantidad());
                 }
             }
         }
+        for (Trabajo trabajo : new Trabajo[] { trabajoA, trabajoB }) {
+            for (DetallePedido detalle : trabajo.pedido.detalles()) {
+                Producto producto = detalle.producto();
+                int cantidad = disponibles.getOrDefault(producto, 0) - detalle.cantidad();
+                if (cantidad < 0) {
+                    throw new IllegalArgumentException("No hay existencias suficientes para preparar ambos pedidos.");
+                }
+                disponibles.put(producto, cantidad);
+            }
+        }
+        int numero = conflictos.configurar(pedidoA, pedidoB, titular(trabajoA), titular(trabajoB));
+        trabajoA.numeroConflicto = numero;
+        trabajoB.numeroConflicto = numero;
+    }
+
+    private Trabajo buscarPendiente(UUID id) {
+        for (Trabajo trabajo : pendientes()) {
+            if (trabajo.pedido.id().equals(id)) {
+                return trabajo;
+            }
+        }
+        throw new IllegalArgumentException("El pedido ya no está pendiente.");
     }
 
     private void avanzar(Trabajo trabajo, double duracion, double desde, double hasta) throws InterruptedException {
         double inicio;
         synchronized (this) {
             inicio = minutos;
+            trabajo.inicioFase = inicio;
         }
         while (true) {
             synchronized (this) {
@@ -247,7 +365,8 @@ public final class MotorSimulacion implements AutoCloseable {
         Comparator<Trabajo> orden = crearOrdenAtencion();
         return trabajos
                 .stream()
-                .filter(trabajo -> trabajo.estado != EstadoPedido.COMPLETADO && trabajo.estado != EstadoPedido.EN_PROCESO)
+                .filter(trabajo -> trabajo.estado != EstadoPedido.COMPLETADO && trabajo.estado != EstadoPedido.EN_PROCESO
+                        && trabajo.estado != EstadoPedido.EN_CONFLICTO)
                 .sorted(Comparator.<Trabajo>comparingInt(trabajo -> trabajo.preferente ? 0 : 1)
                 .thenComparing(orden)
                 .thenComparingLong(trabajo -> trabajo.secuencia))
@@ -255,7 +374,16 @@ public final class MotorSimulacion implements AutoCloseable {
     }
 
     public synchronized List<VistaPedido> espera() {
-        return pendientes().stream().map(this::vista).toList();
+        List<VistaPedido> resultado = new ArrayList<>();
+        for (Trabajo trabajo : trabajos) {
+            if (trabajo.estado == EstadoPedido.EN_CONFLICTO) {
+                resultado.add(vista(trabajo));
+            }
+        }
+        for (Trabajo trabajo : pendientes()) {
+            resultado.add(vista(trabajo));
+        }
+        return resultado;
     }
 
     public synchronized List<VistaPedido> pedidos() {
@@ -263,13 +391,16 @@ public final class MotorSimulacion implements AutoCloseable {
     }
 
     private VistaPedido vista(Trabajo trabajo) {
-        double duracionTotal = Math.max(1, trabajo.pedido.getTotalArticulos() * 0.25) + 0.6;
-        double espera = (trabajo.estado == EstadoPedido.EN_PROCESO || trabajo.estado == EstadoPedido.COMPLETADO ? trabajo.inicio : minutos) - trabajo.llegada;
+        double espera = trabajo.esperaAcumulada;
+        if (trabajo.estado != EstadoPedido.EN_PROCESO && trabajo.estado != EstadoPedido.EN_CONFLICTO
+                && trabajo.estado != EstadoPedido.COMPLETADO) {
+            espera += minutos - trabajo.desdeEspera;
+        }
         return new VistaPedido(
                 trabajo.pedido,
                 trabajo.estado,
                 trabajo.progreso,
-                duracionTotal * (1 - trabajo.progreso),
+                tiempoRestante(trabajo),
                 Math.max(0, espera),
                 trabajo.fase,
                 trabajo.error,
@@ -284,11 +415,11 @@ public final class MotorSimulacion implements AutoCloseable {
                 .toList();
         List<GestorRecursos.Estado> unidades = recursos.estados();
         double esperaMedia = completados.stream()
-                .mapToDouble(trabajo -> trabajo.inicio - trabajo.llegada)
+                .mapToDouble(trabajo -> trabajo.esperaAcumulada)
                 .average()
                 .orElse(0);
         double procesoMedio = completados.stream()
-                .mapToDouble(trabajo -> trabajo.fin - trabajo.inicio)
+                .mapToDouble(trabajo -> trabajo.procesoAnterior + trabajo.fin - trabajo.inicio)
                 .average()
                 .orElse(0);
         int recursosEnUso = (int) unidades.stream()
@@ -339,7 +470,7 @@ public final class MotorSimulacion implements AutoCloseable {
                 if (cerrada) {
                     throw new InterruptedException();
                 }
-                if (recursos.intentar(titular(trabajo), Map.of(TipoRecurso.ESCANER, 1, TipoRecurso.AREA_CARGA, 1))) {
+                if (recursos.intentar(titular(trabajo), recursosDespacho())) {
                     break;
                 }
             }

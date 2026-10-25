@@ -25,16 +25,26 @@ public final class VistasOperativas {
     private final Label cuentaConflictos = texto("0 ACTIVOS", "badge-rojo");
     private final Label tituloEspera = texto("TIEMPOS DE ESPERA", "dato-amarillo");
     private final Label tituloCiclo = texto("ESTADO DE CONFLICTOS", "dato-rojo");
-    private final Button terminarA;
-    private final Button terminarB;
+    private final ComboBox<Pedido> pedidoA = new ComboBox<>();
+    private final ComboBox<Pedido> pedidoB = new ComboBox<>();
+    private final Label avisoConflicto = parrafo("", "muted");
+    private final Button continuarA;
+    private final Button continuarB;
+    private final Button preparar;
+    private final Button cancelar;
     private final Button aumentar;
     private UUID ultimaEntrada;
 
     public VistasOperativas(ContextoCentro centro) {
         this.centro = centro;
         lote.setPromptText("Cantidad a recibir");
-        terminarA = boton("CONTINUAR DL-A", "boton-rojo", () -> resolver(true));
-        terminarB = boton("CONTINUAR DL-B", "boton-rojo-contorno", () -> resolver(false));
+        continuarA = boton("Continuar A", "boton-rojo", () -> resolver(true));
+        continuarB = boton("Continuar B", "boton-rojo-contorno", () -> resolver(false));
+        continuarA.setWrapText(true);
+        continuarB.setWrapText(true);
+        preparar = boton("Preparar espera circular", "boton-secundario", this::prepararConflicto);
+        cancelar = boton("Cancelar preparación", "boton-secundario", this::cancelarPreparacion);
+        configurarPedidosConflicto();
         aumentar = boton("AUMENTAR PRIORIDAD MANUALMENTE", "boton-amarillo", this::priorizar);
         conflictos = crearPanelConflictos();
         configurarRecepcion();
@@ -78,17 +88,20 @@ public final class VistasOperativas {
     }
 
     private void resolver(boolean continuaA) {
+        avisoConflicto.setText("");
         try {
             centro.getConflictos().resolver(continuaA);
         } catch (IllegalArgumentException exception) {
-            mensaje(conflicto, exception.getMessage(), true);
+            mensaje(avisoConflicto, exception.getMessage(), true);
         }
+        actualizar();
     }
 
     private Optional<MotorSimulacion.VistaPedido> demorado() {
         return centro.getMotor().espera()
                 .stream()
                 .filter(pedido -> !pedido.preferente())
+                .filter(pedido -> pedido.estado() != EstadoPedido.EN_CONFLICTO)
                 .filter(pedido -> pedido.espera() > pedido.pedido().nivelServicio().getEsperaObjetivo()
                 .map(d -> (double) d.toMinutes()).orElse(1.0)).max(Comparator.comparingDouble(MotorSimulacion.VistaPedido::espera));
     }
@@ -113,7 +126,7 @@ public final class VistasOperativas {
     }
 
     private VBox crearPanelConflictos() {
-        VBox ciclo = tarjeta(tituloCiclo, conflicto, campos(terminarA, terminarB));
+        VBox ciclo = tarjeta(tituloCiclo, conflicto, campos(continuarA, continuarB));
         ciclo.getStyleClass().add("alerta-conflicto");
         aumentar.setMaxWidth(Double.MAX_VALUE);
         VBox inanicion = tarjeta(tituloEspera, alertaEspera, aumentar);
@@ -124,6 +137,10 @@ public final class VistasOperativas {
                         espacio(),
                         cuentaConflictos
                 ),
+                parrafo("Selecciona dos pedidos pendientes con existencias suficientes. Ambos deben terminar su preparación antes de disputar el Área de carga 1 y el escáner. La simulación debe estar activa para avanzar.", "muted"),
+                campos(campo("PEDIDO A", pedidoA), campo("PEDIDO B", pedidoB)),
+                fila(preparar, cancelar),
+                avisoConflicto,
                 columnas(ciclo, inanicion, 50, 850)
         );
         panel.getStyleClass().add("monitor-admin");
@@ -174,10 +191,82 @@ public final class VistasOperativas {
     private void actualizarConflictos() {
         MonitorConflictos.Vista vista = centro.getConflictos().vista();
         cuentaConflictos.setText(vista.activo() ? "1 ACTIVO" : "0 ACTIVOS");
-        tituloCiclo.setText(vista.activo() ? "ESPERA CIRCULAR, DL-A / DL-B" : "ESTADO DE CONFLICTOS");
-        conflicto.setText(vista.mensaje() + (vista.activo() ? "\nDL-A retiene Montacargas 1 y espera el Escáner compartido.\nDL-B retiene el Escáner y espera Montacargas 1." : ""));
-        terminarA.setDisable(!vista.listo());
-        terminarB.setDisable(!vista.listo());
+        tituloCiclo.setText(vista.activo() ? "ESPERA CIRCULAR EN DESPACHO" : "ESTADO DE CONFLICTOS");
+        String detalle = vista.mensaje();
+        if (vista.activo()) {
+            detalle += "\nPedido " + centro.identificador(vista.pedidoA()) + " retiene Área de carga 1 y espera el Escáner.";
+            detalle += "\nPedido " + centro.identificador(vista.pedidoB()) + " retiene el Escáner y espera Área de carga 1.";
+        }
+        conflicto.setText(detalle);
+        continuarA.setText(vista.pedidoA() == null ? "Continuar A" : "Continuar " + centro.identificador(vista.pedidoA()));
+        continuarB.setText(vista.pedidoB() == null ? "Continuar B" : "Continuar " + centro.identificador(vista.pedidoB()));
+        continuarA.setDisable(!vista.listo());
+        continuarB.setDisable(!vista.listo());
+        actualizarPedidosConflicto(vista);
+    }
+
+    private void configurarPedidosConflicto() {
+        for (ComboBox<Pedido> selector : Arrays.asList(pedidoA, pedidoB)) {
+            selector.setMaxWidth(Double.MAX_VALUE);
+            selector.setPromptText("Selecciona un pedido pendiente");
+            selector.setConverter(new StringConverter<Pedido>() {
+                @Override
+                public String toString(Pedido pedido) {
+                    return pedido == null ? "" : centro.identificador(pedido) + ", " + pedido.nivelServicio()
+                            + ", " + pedido.getTotalArticulos() + " unidades";
+                }
+
+                @Override
+                public Pedido fromString(String texto) {
+                    return null;
+                }
+            });
+        }
+    }
+
+    private void actualizarPedidosConflicto(MonitorConflictos.Vista vista) {
+        boolean enCurso = vista.activo() || vista.preparando() || vista.recuperando();
+        pedidoA.setDisable(enCurso);
+        pedidoB.setDisable(enCurso);
+        preparar.setDisable(enCurso);
+        cancelar.setDisable(!vista.preparando());
+        if (!enCurso) {
+            List<Pedido> pendientes = new ArrayList<>();
+            for (MotorSimulacion.VistaPedido pedido : centro.getMotor().espera()) {
+                if (pedido.estado() != EstadoPedido.EN_CONFLICTO) {
+                    pendientes.add(pedido.pedido());
+                }
+            }
+            for (ComboBox<Pedido> selector : Arrays.asList(pedidoA, pedidoB)) {
+                if (!selector.getItems().equals(pendientes)) {
+                    Pedido seleccionado = selector.getValue();
+                    selector.getItems().setAll(pendientes);
+                    selector.setValue(pendientes.contains(seleccionado) ? seleccionado : null);
+                }
+            }
+        }
+    }
+
+    private void prepararConflicto() {
+        avisoConflicto.setText("");
+        try {
+            UUID idA = pedidoA.getValue() == null ? null : pedidoA.getValue().id();
+            UUID idB = pedidoB.getValue() == null ? null : pedidoB.getValue().id();
+            centro.getMotor().provocarConflicto(idA, idB);
+        } catch (IllegalArgumentException exception) {
+            mensaje(avisoConflicto, exception.getMessage(), true);
+        }
+        actualizar();
+    }
+
+    private void cancelarPreparacion() {
+        avisoConflicto.setText("");
+        try {
+            centro.getConflictos().cancelarPreparacion();
+        } catch (IllegalArgumentException exception) {
+            mensaje(avisoConflicto, exception.getMessage(), true);
+        }
+        actualizar();
     }
 
     private void actualizarEspera() {

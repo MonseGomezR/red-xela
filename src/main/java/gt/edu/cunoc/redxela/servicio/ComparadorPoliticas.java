@@ -41,7 +41,7 @@ public final class ComparadorPoliticas implements AutoCloseable {
             }
             inventario = almacen.existencias();
             for (MotorSimulacion.VistaPedido vista : principal.pedidos()) {
-                if (vista.estado() == EstadoPedido.EN_PROCESO) {
+                if (vista.estado() == EstadoPedido.EN_PROCESO || vista.estado() == EstadoPedido.EN_CONFLICTO) {
                     descontarPedidoActivo(inventario, vista.pedido());
                 } else if (vista.estado() != EstadoPedido.COMPLETADO) {
                     carga.add(vista.pedido());

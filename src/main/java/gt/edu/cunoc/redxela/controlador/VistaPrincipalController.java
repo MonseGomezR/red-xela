@@ -406,21 +406,8 @@ public final class VistaPrincipalController implements AutoCloseable {
         registro.setEditable(false);
         registro.setPrefHeight(460);
         registro.getStyleClass().add("mono");
-        Label resultado = parrafo("", "muted");
-        Button provocar = boton("Simular espera circular", "boton-secundario", () -> {
-            try {
-                centro.getConflictos().provocar();
-                mensaje(resultado, "Escenario iniciado. Consulta Resolución de conflictos.", false);
-            } catch (IllegalArgumentException exception) {
-                mensaje(resultado, exception.getMessage(), true);
-            }
-        });
-        paginaDepuracion = new VBox(
-                16,
-                registro,
-                fila(provocar, boton("Ver conflictos", "boton-enlace", this::administrar)),
-                resultado
-        );
+        Button preparar = boton("Preparar conflicto", "boton-secundario", this::administrar);
+        paginaDepuracion = new VBox(16, registro, preparar);
         paginaDepuracion.getStyleClass().add("pagina");
     }
 

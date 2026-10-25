@@ -1,105 +1,256 @@
 package gt.edu.cunoc.redxela.servicio;
 
 import gt.edu.cunoc.redxela.modelo.TipoRecurso;
-import java.util.Map;
-import java.util.concurrent.*;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 
-/**
- * Demostración real: dos operaciones retienen recursos distintos y esperan el recurso de la otra.
- */
+/** Coordina la espera circular entre dos pedidos que llegan al despacho. */
 public final class MonitorConflictos implements AutoCloseable {
 
-    public record Vista(boolean activo, boolean recuperando, boolean listo, String mensaje) {
+    public record Vista(boolean activo, boolean recuperando, boolean listo, boolean preparando,
+            UUID pedidoA, UUID pedidoB, String mensaje) {
+    }
+
+    private static final class Escenario {
+
+        private final int numero;
+        private final UUID pedidoA;
+        private final UUID pedidoB;
+        private final String titularA;
+        private final String titularB;
+        private final CountDownLatch preparados = new CountDownLatch(2);
+        private final CountDownLatch reservados = new CountDownLatch(1);
+        private final CountDownLatch listos = new CountDownLatch(2);
+        private Thread hiloA;
+        private Thread hiloB;
+        private boolean continuaA;
+        private boolean resolviendo;
+        private boolean ganadorFinalizado;
+        private boolean completoA;
+        private boolean completoB;
+        private boolean terminado;
+        private boolean cancelado;
+
+        private Escenario(int numero, UUID pedidoA, UUID pedidoB, String titularA, String titularB) {
+            this.numero = numero;
+            this.pedidoA = pedidoA;
+            this.pedidoB = pedidoB;
+            this.titularA = titularA;
+            this.titularB = titularB;
+        }
     }
 
     private final GestorRecursos recursos;
-    private final ExecutorService hilos = Executors.newFixedThreadPool(3, new FabricaHilos("conflicto"));
-    private Future<?> operacionA;
-    private Future<?> operacionB;
-    private CountDownLatch listos;
-    private boolean activo;
-    private boolean recuperando;
+    private Escenario escenario;
+    private int secuencia;
+    private boolean cerrado;
     private String mensaje = "No hay esperas circulares detectadas.";
 
     public MonitorConflictos(GestorRecursos recursos) {
         this.recursos = recursos;
     }
 
-    public synchronized void provocar() {
-        if (activo || recuperando) {
+    public synchronized int configurar(UUID pedidoA, UUID pedidoB, String titularA, String titularB) {
+        if (cerrado) {
+            throw new IllegalArgumentException("El monitor de conflictos está cerrado.");
+        }
+        if (pedidoA == null || pedidoB == null || pedidoA.equals(pedidoB)
+                || titularA == null || titularB == null || titularA.equals(titularB)) {
+            throw new IllegalArgumentException("Selecciona dos pedidos pendientes distintos.");
+        }
+        if (escenario != null && (!escenario.terminado || escenario.hiloA != null || escenario.hiloB != null)) {
             throw new IllegalArgumentException("Finaliza el escenario actual antes de iniciar otro.");
         }
-        if (!recursos.prepararConflicto("DL-A", "DL-B")) {
-            throw new IllegalArgumentException("Montacargas 1 o el escáner están ocupados. Reintenta cuando se liberen.");
-        }
-        activo = true;
-        listos = new CountDownLatch(2);
-        mensaje = "A retiene Montacargas 1 y espera Escáner. B retiene Escáner y espera Montacargas 1.";
-        operacionA = hilos.submit(() -> esperar("DL-A", TipoRecurso.ESCANER));
-        operacionB = hilos.submit(() -> esperar("DL-B", TipoRecurso.MONTACARGAS));
+        escenario = new Escenario(++secuencia, pedidoA, pedidoB, titularA, titularB);
+        mensaje = "Los dos pedidos se prepararán antes de provocar la espera circular en despacho.";
+        return escenario.numero;
     }
 
-    private void esperar(String titular, TipoRecurso segundo) {
-        try {
-            listos.countDown();
-            recursos.esperarUnidad(titular, segundo, 1);
-            Thread.sleep(600);
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-        } finally {
-            recursos.liberar(titular);
+    public synchronized boolean participa(UUID pedido, int numero) {
+        return escenario != null && escenario.numero == numero && !escenario.terminado
+                && !escenario.resolviendo && pertenece(escenario, pedido);
+    }
+
+    public synchronized boolean permiteDespacho(UUID pedido, int numero) {
+        if (escenario == null || escenario.numero != numero || escenario.terminado || !escenario.resolviendo) {
+            return true;
+        }
+        UUID ganador = escenario.continuaA ? escenario.pedidoA : escenario.pedidoB;
+        return pedido.equals(ganador) || escenario.ganadorFinalizado;
+    }
+
+    /** Ambos pedidos liberan la preparación antes de retener los recursos de despacho. */
+    public void prepararDespacho(UUID pedido, int numero) throws InterruptedException {
+        Escenario actual;
+        boolean esA;
+        synchronized (this) {
+            actual = comprobarEscenario(numero);
+            if (!pertenece(actual, pedido)) {
+                throw new InterruptedException("El pedido no pertenece a este escenario.");
+            }
+            esA = pedido.equals(actual.pedidoA);
+            if (esA) {
+                actual.hiloA = Thread.currentThread();
+            } else {
+                actual.hiloB = Thread.currentThread();
+            }
+        }
+        actual.preparados.countDown();
+        actual.preparados.await();
+        if (esA) {
+            boolean reservado = false;
+            while (!reservado) {
+                synchronized (this) {
+                    comprobarEscenario(numero);
+                    reservado = recursos.prepararConflicto(actual.titularA, actual.titularB);
+                }
+                if (!reservado) {
+                    Thread.sleep(40);
+                }
+            }
+            actual.reservados.countDown();
+        }
+        actual.reservados.await();
+        synchronized (this) {
+            comprobarEscenario(numero);
         }
     }
 
-    /**
-     * Interrumpe al perdedor; el ganador obtiene el segundo recurso y el otro vuelve a espera.
-     */
-    public synchronized void resolver(boolean continuaA) {
-        if (!activo || listos.getCount() != 0) {
-            throw new IllegalArgumentException("El escenario aún no está listo para resolver.");
+    /** El segundo recurso se solicita con una espera real sobre su semáforo. */
+    public void esperarDespacho(UUID pedido, int numero) throws InterruptedException {
+        Escenario actual;
+        synchronized (this) {
+            actual = comprobarEscenario(numero);
+            if (!pertenece(actual, pedido)) {
+                throw new InterruptedException("El pedido no pertenece a este escenario.");
+            }
         }
-        String ganador = continuaA ? "A" : "B", perdedor = continuaA ? "B" : "A";
-        (continuaA ? operacionB : operacionA).cancel(true);
-        activo = false;
-        recuperando = true;
-        mensaje = "Continúa " + ganador + ". Se interrumpió " + perdedor + " y su operación vuelve a la lista de espera.";
-        hilos.submit(() -> atenderReencolado(perdedor));
+        actual.listos.countDown();
+        actual.listos.await();
+        if (pedido.equals(actual.pedidoA)) {
+            recursos.esperarUnidad(actual.titularA, TipoRecurso.ESCANER, 1);
+        } else {
+            recursos.esperarUnidad(actual.titularB, TipoRecurso.AREA_CARGA, 1);
+        }
+        synchronized (this) {
+            comprobarEscenario(numero);
+        }
+    }
+
+    public void resolver(boolean continuaA) {
+        Thread interrumpido;
+        synchronized (this) {
+            if (escenario == null || escenario.terminado || escenario.resolviendo || escenario.listos.getCount() != 0) {
+                throw new IllegalArgumentException("Los pedidos todavía no están listos para resolver el conflicto.");
+            }
+            escenario.continuaA = continuaA;
+            escenario.resolviendo = true;
+            interrumpido = continuaA ? escenario.hiloB : escenario.hiloA;
+            mensaje = "El pedido seleccionado continúa el despacho. El otro vuelve a la lista de espera.";
+        }
+        interrumpido.interrupt();
+    }
+
+    public void cancelarPreparacion() {
+        Escenario actual;
+        synchronized (this) {
+            if (escenario == null || escenario.terminado || escenario.resolviendo || escenario.listos.getCount() == 0) {
+                throw new IllegalArgumentException("Solo se puede cancelar un escenario que todavía se está preparando.");
+            }
+            actual = escenario;
+            actual.cancelado = true;
+            actual.terminado = true;
+            mensaje = "Preparación cancelada. Los pedidos continúan por la cola normal.";
+        }
+        interrumpir(actual);
+    }
+
+    /** Recibe el resultado del mismo trabajador que procesa el pedido. */
+    public void finalizarIntento(UUID pedido, int numero, boolean completado) {
+        Escenario interrumpir = null;
+        synchronized (this) {
+            if (escenario == null || escenario.numero != numero || !pertenece(escenario, pedido)) {
+                return;
+            }
+            if (pedido.equals(escenario.pedidoA) && escenario.hiloA == Thread.currentThread()) {
+                escenario.hiloA = null;
+            }
+            if (pedido.equals(escenario.pedidoB) && escenario.hiloB == Thread.currentThread()) {
+                escenario.hiloB = null;
+            }
+            if (escenario.terminado) {
+                return;
+            }
+            if (completado) {
+                if (pedido.equals(escenario.pedidoA)) {
+                    escenario.completoA = true;
+                } else {
+                    escenario.completoB = true;
+                }
+                UUID ganador = escenario.continuaA ? escenario.pedidoA : escenario.pedidoB;
+                if (escenario.resolviendo && pedido.equals(ganador)) {
+                    escenario.ganadorFinalizado = true;
+                    mensaje = "El pedido seleccionado terminó. El pedido reencolado ya puede continuar.";
+                }
+                if (escenario.completoA && escenario.completoB) {
+                    escenario.terminado = true;
+                    mensaje = "Conflicto resuelto. Ambos pedidos completaron el despacho.";
+                }
+            } else if (!escenario.resolviendo || pedido.equals(escenario.continuaA ? escenario.pedidoA : escenario.pedidoB)) {
+                escenario.cancelado = true;
+                escenario.terminado = true;
+                mensaje = "El escenario se interrumpió. Los pedidos vuelven al procesamiento normal.";
+                interrumpir = escenario;
+            }
+        }
+        if (interrumpir != null) {
+            interrumpir(interrumpir);
+        }
     }
 
     public synchronized Vista vista() {
-        return new Vista(activo, recuperando, activo && listos.getCount() == 0, mensaje);
+        boolean vigente = escenario != null && !escenario.terminado;
+        boolean listo = vigente && !escenario.resolviendo && escenario.listos.getCount() == 0;
+        boolean recuperando = vigente && escenario.resolviendo;
+        boolean preparando = vigente && !listo && !recuperando;
+        return new Vista(listo, recuperando, listo, preparando,
+                escenario == null ? null : escenario.pedidoA,
+                escenario == null ? null : escenario.pedidoB, mensaje);
+    }
+
+    private Escenario comprobarEscenario(int numero) throws InterruptedException {
+        if (cerrado || escenario == null || escenario.numero != numero || escenario.cancelado || escenario.terminado) {
+            throw new InterruptedException("El escenario ya no está activo.");
+        }
+        return escenario;
+    }
+
+    private boolean pertenece(Escenario actual, UUID pedido) {
+        return pedido.equals(actual.pedidoA) || pedido.equals(actual.pedidoB);
+    }
+
+    private synchronized void interrumpir(Escenario actual) {
+        if (actual.hiloA != null && actual.hiloA != Thread.currentThread()) {
+            actual.hiloA.interrupt();
+        }
+        if (actual.hiloB != null && actual.hiloB != Thread.currentThread()) {
+            actual.hiloB.interrupt();
+        }
     }
 
     @Override
     public void close() {
-        hilos.shutdownNow();
-        for (String titular : new String[] { "DL-A", "DL-B", "DL-A (reencolado)", "DL-B (reencolado)" }) {
-            recursos.liberar(titular);
-        }
+        Escenario actual;
         synchronized (this) {
-            activo = false;
-            recuperando = false;
+            cerrado = true;
+            actual = escenario;
+            if (actual != null) {
+                actual.cancelado = true;
+                actual.terminado = true;
+            }
         }
-    }
-
-    private void atenderReencolado(String perdedor) {
-        String titular = "DL-" + perdedor + " (reencolado)";
-        try {
-            Thread.sleep(750);
-            while (!recursos.intentar(titular, Map.of(TipoRecurso.MONTACARGAS, 1, TipoRecurso.ESCANER, 1))) {
-                Thread.sleep(60);
-            }
-            Thread.sleep(300);
-            synchronized (this) {
-                mensaje = "Conflicto resuelto. Ambas operaciones terminaron; " + perdedor + " fue atendida después.";
-            }
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-        } finally {
-            recursos.liberar(titular);
-            synchronized (this) {
-                recuperando = false;
-            }
+        if (actual != null) {
+            interrumpir(actual);
         }
     }
 }

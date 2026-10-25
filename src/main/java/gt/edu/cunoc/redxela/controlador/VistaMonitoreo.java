@@ -274,7 +274,14 @@ public final class VistaMonitoreo extends VBox {
         MonitorConflictos.Vista conflicto = centro.getConflictos().vista();
         deadlocks.setText(conflicto.activo() ? "01" : "00");
         tituloConflicto.setText(conflicto.activo() ? "DEADLOCK DETECTADO" : "MONITOR DE DEADLOCKS");
-        mensajeConflicto.setText(conflicto.activo() ? "DL-A necesita Escáner compartido (retenido por DL-B).\n\nDL-B necesita Montacargas 1 (retenido por DL-A)." : conflicto.mensaje());
+        String detalle = conflicto.mensaje();
+        if (conflicto.activo()) {
+            String pedidoA = centro.identificador(conflicto.pedidoA());
+            String pedidoB = centro.identificador(conflicto.pedidoB());
+            detalle = "Pedido " + pedidoA + " espera el Escáner, retenido por " + pedidoB + ".\n\n"
+                    + "Pedido " + pedidoB + " espera Área de carga 1, retenida por " + pedidoA + ".";
+        }
+        mensajeConflicto.setText(detalle);
     }
 
     private void actualizarRecursos(List<GestorRecursos.Estado> estados, List<MotorSimulacion.VistaPedido> pedidos) {
@@ -289,6 +296,12 @@ public final class VistaMonitoreo extends VBox {
             MotorSimulacion.VistaPedido pedido = porTitular.get(estado.titular());
             recursoVisual.titular().setText(estado.disponible() ? "DISPONIBLE" : pedido == null ? estado.titular() : "Pedido #" + centro.identificador(pedido.pedido()));
             recursoVisual.detalle().setText(estado.disponible() ? "Listo para procesar" : pedido == null ? "Recurso retenido" : pedido.fase());
+            boolean bloqueado = pedido != null && pedido.estado() == EstadoPedido.EN_CONFLICTO;
+            if (bloqueado && !recursoVisual.tarjeta().getStyleClass().contains("bloqueado")) {
+                recursoVisual.tarjeta().getStyleClass().add("bloqueado");
+            } else if (!bloqueado) {
+                recursoVisual.tarjeta().getStyleClass().remove("bloqueado");
+            }
             if (recursoVisual.progreso() != null) {
                 recursoVisual.progreso().setProgress(estado.disponible() ? 0 : pedido == null ? -1 : pedido.progreso());
             }
@@ -310,7 +323,7 @@ public final class VistaMonitoreo extends VBox {
         activos.getChildren().clear();
         List<MotorSimulacion.VistaPedido> procesando = pedidos
                 .stream()
-                .filter(pedido -> pedido.estado() == EstadoPedido.EN_PROCESO)
+                .filter(pedido -> pedido.estado() == EstadoPedido.EN_PROCESO || pedido.estado() == EstadoPedido.EN_CONFLICTO)
                 .toList();
         totalActivos.setText(procesando.size() + " pedidos activos");
         if (procesando.isEmpty()) {
@@ -325,9 +338,12 @@ public final class VistaMonitoreo extends VBox {
                     fila(
                             texto("#" + centro.identificador(pedido.pedido()) + " - " + nombre, "destacado"),
                             espacio(),
-                            texto("%.1fm restantes".formatted(pedido.restante()), "mono")
+                            texto(pedido.estado() == EstadoPedido.EN_CONFLICTO ? "Bloqueado"
+                                    : String.format("%.1fm restantes", pedido.restante()),
+                                    pedido.estado() == EstadoPedido.EN_CONFLICTO ? "dato-rojo" : "mono")
                     ),
                     parrafo(resumenProductos(pedido.pedido()), "etiqueta"),
+                    parrafo(pedido.fase(), pedido.estado() == EstadoPedido.EN_CONFLICTO ? "dato-rojo" : "muted"),
                     barra
             );
             HBox.setHgrow(datos, Priority.ALWAYS);
@@ -372,7 +388,8 @@ public final class VistaMonitoreo extends VBox {
                     parrafo(resumenProductos(pedido.pedido()) + ", %.1fm en cola".formatted(pedido.espera()), "muted"),
                     texto(
                             pedido.fase(),
-                            pedido.estado() == EstadoPedido.ESPERANDO_INVENTARIO ? "dato-amarillo" : "muted"
+                            pedido.estado() == EstadoPedido.EN_CONFLICTO ? "dato-rojo"
+                                    : pedido.estado() == EstadoPedido.ESPERANDO_INVENTARIO ? "dato-amarillo" : "muted"
                     )
             );
             item.getStyleClass().add("fila-espera");

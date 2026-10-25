@@ -106,19 +106,19 @@ public final class GestorRecursos {
      * Reserva las primeras unidades para la demostración controlada de espera circular.
      */
     public synchronized boolean prepararConflicto(String a, String b) {
-        Unidad montacargas = unidad(TipoRecurso.MONTACARGAS, 1);
+        Unidad carga = unidad(TipoRecurso.AREA_CARGA, 1);
         Unidad escaner = unidad(TipoRecurso.ESCANER, 1);
-        if (montacargas.titular != null || escaner.titular != null || montacargas.permiso.availablePermits() == 0 || escaner.permiso.availablePermits() == 0) {
+        if (carga.titular != null || escaner.titular != null || carga.permiso.availablePermits() == 0 || escaner.permiso.availablePermits() == 0) {
             return false;
         }
-        if (!montacargas.permiso.tryAcquire()) {
+        if (!carga.permiso.tryAcquire()) {
             return false;
         }
         if (!escaner.permiso.tryAcquire()) {
-            montacargas.permiso.release();
+            carga.permiso.release();
             return false;
         }
-        montacargas.titular = a;
+        carga.titular = a;
         escaner.titular = b;
         return true;
     }

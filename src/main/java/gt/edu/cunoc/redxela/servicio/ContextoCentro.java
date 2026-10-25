@@ -15,9 +15,9 @@ public final class ContextoCentro implements AutoCloseable {
     private final RegistroPedidos pedidos = new RegistroPedidos(clientes);
     private final Almacen almacen = new Almacen();
     private final GestorRecursos recursos = new GestorRecursos();
-    private final MotorSimulacion motor = new MotorSimulacion(almacen, recursos);
-    private final CanalRecepcion recepcion = new CanalRecepcion(almacen, recursos);
     private final MonitorConflictos conflictos = new MonitorConflictos(recursos);
+    private final MotorSimulacion motor = new MotorSimulacion(almacen, recursos, conflictos);
+    private final CanalRecepcion recepcion = new CanalRecepcion(almacen, recursos);
     private final ComparadorPoliticas comparador = new ComparadorPoliticas();
     private final ScheduledExecutorService generador = Executors.newSingleThreadScheduledExecutor(new FabricaHilos("llegadas"));
     private final List<Cliente> automaticos = new ArrayList<>();
@@ -55,9 +55,13 @@ public final class ContextoCentro implements AutoCloseable {
     }
 
     public synchronized String identificador(Pedido pedido) {
+        return identificador(pedido.id());
+    }
+
+    public synchronized String identificador(UUID id) {
         return identificadores.getOrDefault(
-                pedido.id(),
-                "P-" + pedido.id().toString().substring(0, 8).toUpperCase(Locale.ROOT)
+                id,
+                "P-" + id.toString().substring(0, 8).toUpperCase(Locale.ROOT)
         );
     }
 

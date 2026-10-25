@@ -104,6 +104,18 @@ public final class Almacen {
                 .mapToInt(tramo -> tramo.cantidad - tramo.reservado).sum();
     }
 
+    /** Devuelve las cantidades de todos los productos en una sola lectura. */
+    public synchronized Map<Producto, Integer> existencias() {
+        Map<Producto, Integer> cantidades = new LinkedHashMap<>();
+        for (List<Tramo> celda : celdas) {
+            for (Tramo tramo : celda) {
+                int anterior = cantidades.getOrDefault(tramo.producto, 0);
+                cantidades.put(tramo.producto, anterior + tramo.cantidad);
+            }
+        }
+        return cantidades;
+    }
+
     /**
      * Reserva todos los detalles o ninguno; nunca deja una reserva parcial por falta de stock.
      */

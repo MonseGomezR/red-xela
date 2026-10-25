@@ -18,6 +18,7 @@ public final class ContextoCentro implements AutoCloseable {
     private final MotorSimulacion motor = new MotorSimulacion(almacen, recursos);
     private final CanalRecepcion recepcion = new CanalRecepcion(almacen, recursos);
     private final MonitorConflictos conflictos = new MonitorConflictos(recursos);
+    private final ComparadorPoliticas comparador = new ComparadorPoliticas();
     private final ScheduledExecutorService generador = Executors.newSingleThreadScheduledExecutor(new FabricaHilos("llegadas"));
     private final List<Cliente> automaticos = new ArrayList<>();
     private volatile boolean automatico = true;
@@ -120,6 +121,7 @@ public final class ContextoCentro implements AutoCloseable {
     public synchronized void close() {
         cerrado = true;
         generador.shutdownNow();
+        comparador.close();
         recepcion.close();
         conflictos.close();
         motor.close();
@@ -167,5 +169,9 @@ public final class ContextoCentro implements AutoCloseable {
 
     public MonitorConflictos getConflictos() {
         return conflictos;
+    }
+
+    public ComparadorPoliticas getComparador() {
+        return comparador;
     }
 }

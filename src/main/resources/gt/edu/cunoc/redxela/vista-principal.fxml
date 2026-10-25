@@ -11,6 +11,9 @@
    <HBox><Label text="RED" styleClass="marca"/><Label text="Xela" styleClass="marca-cian"/></HBox>
   </HBox>
   <Button fx:id="navMonitoreo" text="Monitoreo" onAction="#monitorear" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-activity" iconSize="19"/></graphic></Button>
+  <VBox spacing="2" styleClass="submenu">
+   <Button fx:id="subComparacion" text="Comparar políticas" onAction="#compararPoliticas" maxWidth="Infinity" styleClass="nav,subnav"/>
+  </VBox>
   <Button fx:id="navPedidos" text="Pedidos" onAction="#nuevoPedido" maxWidth="Infinity" styleClass="nav"><graphic><FontIcon iconLiteral="fth-shopping-cart" iconSize="19"/></graphic></Button>
   <VBox spacing="2" styleClass="submenu">
    <Button fx:id="subNuevo" text="Nuevo pedido" onAction="#nuevoPedido" maxWidth="Infinity" styleClass="nav,subnav"/>

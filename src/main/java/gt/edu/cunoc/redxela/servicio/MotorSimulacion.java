@@ -128,11 +128,7 @@ public final class MotorSimulacion implements AutoCloseable {
             return;
         }
         minutos += minutosTranscurridos;
-        List<GestorRecursos.Estado> estados = recursos.estados();
-        tiempoOcupado += minutosTranscurridos * estados
-                .stream()
-                .filter(estadoRecurso -> !estadoRecurso.disponible()).count();
-        tiempoMedido += minutosTranscurridos * estados.size();
+        registrarOcupacion(minutosTranscurridos);
         asignar();
     }
 
@@ -144,7 +140,20 @@ public final class MotorSimulacion implements AutoCloseable {
             return;
         }
         minutos += 1;
+        registrarOcupacion(1);
         asignar();
+    }
+
+    private void registrarOcupacion(double duracion) {
+        List<GestorRecursos.Estado> estados = recursos.estados();
+        int ocupados = 0;
+        for (GestorRecursos.Estado estado : estados) {
+            if (!estado.disponible()) {
+                ocupados++;
+            }
+        }
+        tiempoOcupado += duracion * ocupados;
+        tiempoMedido += duracion * estados.size();
     }
 
     private void asignar() {

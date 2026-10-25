@@ -21,6 +21,7 @@ public final class VistaPrincipalController implements AutoCloseable {
     private enum Pagina {
 
         MONITOREO,
+        COMPARACION,
         PEDIDO,
         CLIENTES,
         HISTORIAL,
@@ -32,6 +33,7 @@ public final class VistaPrincipalController implements AutoCloseable {
 
     private final ContextoCentro centro = new ContextoCentro();
     private VistaMonitoreo monitoreo;
+    private VistaComparacion comparacion;
     private VistaInventario inventario;
     private VistaPedido pedido;
     private VistaClientes clientes;
@@ -62,6 +64,7 @@ public final class VistaPrincipalController implements AutoCloseable {
     @FXML private Button pausar;
     @FXML private Button avanzar;
     @FXML private Button subNuevo;
+    @FXML private Button subComparacion;
     @FXML private Button subClientes;
     @FXML private Button subHistorial;
     @FXML private Button subMapa;
@@ -74,6 +77,9 @@ public final class VistaPrincipalController implements AutoCloseable {
     @FXML private ToggleButton estandar;
     @FXML private ToggleButton estres;
     @FXML private ComboBox<String> velocidad;
+
+    public VistaPrincipalController() {
+    }
 
     @FXML
     private void initialize() {
@@ -97,6 +103,7 @@ public final class VistaPrincipalController implements AutoCloseable {
 
     private void crearVistas() {
         monitoreo = new VistaMonitoreo(centro, this::administrar, this::historial);
+        comparacion = new VistaComparacion(centro);
         inventario = new VistaInventario(centro);
         operaciones = new VistasOperativas(centro);
         pedido = new VistaPedido(centro, this::gestionarClientes);
@@ -111,6 +118,7 @@ public final class VistaPrincipalController implements AutoCloseable {
 
     private void configurarNavegacion() {
         submenus = Map.of(
+                Pagina.COMPARACION, subComparacion,
                 Pagina.PEDIDO, subNuevo,
                 Pagina.CLIENTES, subClientes,
                 Pagina.HISTORIAL, subHistorial,
@@ -164,6 +172,11 @@ public final class VistaPrincipalController implements AutoCloseable {
     }
 
     @FXML
+    private void compararPoliticas() {
+        mostrar(Pagina.COMPARACION);
+    }
+
+    @FXML
     private void nuevoPedido() {
         mostrar(Pagina.PEDIDO);
     }
@@ -202,6 +215,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         pagina = destino;
         Node vista = switch (destino) {
             case MONITOREO -> monitoreo;
+            case COMPARACION -> comparacion;
             case INVENTARIO -> inventario;
             case PEDIDO -> pedido;
             case CLIENTES -> clientes;
@@ -215,6 +229,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         aviso.setText("");
         titulo.setText(switch (destino) {
             case MONITOREO -> "Panel de Control General";
+            case COMPARACION -> "Comparación de políticas";
             case PEDIDO -> "Nuevo pedido";
             case CLIENTES -> "Cuentas de clientes";
             case HISTORIAL -> "Historial de pedidos";
@@ -245,7 +260,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         }
         submenus.values().forEach(botonSubmenu -> botonSubmenu.getStyleClass().remove("seleccionado"));
         Button principal = switch (destino) {
-            case MONITOREO -> navMonitoreo;
+            case MONITOREO, COMPARACION -> navMonitoreo;
             case PEDIDO, CLIENTES, HISTORIAL -> navPedidos;
             case INVENTARIO, RECEPCION -> navInventario;
             case CONFLICTOS, DEPURACION -> navAdmin;
@@ -327,6 +342,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         barraCapacidad.setProgress(porcentaje);
         switch (pagina) {
             case MONITOREO -> monitoreo.actualizar();
+            case COMPARACION -> comparacion.actualizar();
             case INVENTARIO -> inventario.actualizar();
             case PEDIDO -> pedido.actualizar();
             case CLIENTES -> clientes.actualizar();

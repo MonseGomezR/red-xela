@@ -17,6 +17,8 @@ public final class VistaMonitoreo extends VBox {
     private final ContextoCentro centro;
     private final Label completados = texto("0", "kpi-valor");
     private final Label espera = texto("0.0m", "kpi-valor");
+    private final Label proceso = texto("0.0m", "kpi-valor");
+    private final Label ocupacionMedia = texto("0%", "kpi-valor");
     private final Label ocupados = texto("0/26", "kpi-valor");
     private final Label deadlocks = texto("00", "kpi-valor");
     private final Label media = texto("0%", "dato-cian");
@@ -164,11 +166,13 @@ public final class VistaMonitoreo extends VBox {
         indicadores.getChildren().addAll(
                 kpi(Feather.CHECK_CIRCLE, completados, "PEDIDOS COMPLETADOS", texto("Sesión actual", "exito"), "cian"),
                 kpi(Feather.CLOCK, espera, "TIEMPO PROM. ESPERA", texto("Promedio", "dato-amarillo"), "azul"),
+                kpi(Feather.ACTIVITY, proceso, "TIEMPO PROM. PROCESAMIENTO", texto("Pedidos completados", "muted"), "azul"),
                 kpi(Feather.USERS, ocupados, "RECURSOS EN USO", media, "violeta"),
+                kpi(Feather.BAR_CHART_2, ocupacionMedia, "OCUPACIÓN MEDIA", texto("Tiempo de la sesión", "muted"), "violeta"),
                 kpi(Feather.LINK_2, deadlocks, "DEADLOCKS DETECTADOS", texto("Espera circular", "dato-rojo"), "rojo")
         );
         indicadores.widthProperty().addListener((o, a, ancho) -> {
-            int cantidadColumnas = ancho.doubleValue() < 750 ? 2 : 4;
+            int cantidadColumnas = ancho.doubleValue() < 750 ? 2 : 3;
             indicadores.getColumnConstraints().clear();
             for (int i = 0; i < cantidadColumnas; i++) {
                 ColumnConstraints restriccion = new ColumnConstraints();
@@ -176,7 +180,7 @@ public final class VistaMonitoreo extends VBox {
                 restriccion.setMinWidth(0);
                 indicadores.getColumnConstraints().add(restriccion);
             }
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < indicadores.getChildren().size(); i++) {
                 GridPane.setColumnIndex(indicadores.getChildren().get(i), i % cantidadColumnas);
                 GridPane.setRowIndex(indicadores.getChildren().get(i), i / cantidadColumnas);
             }
@@ -263,6 +267,8 @@ public final class VistaMonitoreo extends VBox {
         MotorSimulacion.Estadisticas estadisticas = centro.getMotor().estadisticas();
         completados.setText(Integer.toString(estadisticas.completados()));
         espera.setText("%.1fm".formatted(estadisticas.esperaMedia()));
+        proceso.setText(String.format("%.1fm", estadisticas.procesoMedio()));
+        ocupacionMedia.setText(String.format("%.1f%%", estadisticas.ocupacionMedia() * 100));
         ocupados.setText(estadisticas.recursosEnUso() + "/" + estadisticas.recursosTotales());
         media.setText("%.0f%%".formatted(100.0 * estadisticas.recursosEnUso() / estadisticas.recursosTotales()));
         MonitorConflictos.Vista conflicto = centro.getConflictos().vista();

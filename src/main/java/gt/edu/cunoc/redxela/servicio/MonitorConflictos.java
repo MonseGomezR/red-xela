@@ -4,22 +4,34 @@ import gt.edu.cunoc.redxela.modelo.TipoRecurso;
 import java.util.Map;
 import java.util.concurrent.*;
 
-/** Demostración real: dos operaciones retienen recursos distintos y esperan el recurso de la otra. */
+/**
+ * Demostración real: dos operaciones retienen recursos distintos y esperan el recurso de la otra.
+ */
 public final class MonitorConflictos implements AutoCloseable {
-    public record Vista(boolean activo, boolean recuperando, boolean listo, String mensaje) { }
+
+    public record Vista(boolean activo, boolean recuperando, boolean listo, String mensaje) {
+    }
+
     private final GestorRecursos recursos;
-    private final ExecutorService hilos = Executors.newFixedThreadPool(3, MotorSimulacion.hilos("conflicto"));
-    private Future<?> operacionA, operacionB;
+    private final ExecutorService hilos = Executors.newFixedThreadPool(3, new FabricaHilos("conflicto"));
+    private Future<?> operacionA;
+    private Future<?> operacionB;
     private CountDownLatch listos;
-    private boolean activo, recuperando;
+    private boolean activo;
+    private boolean recuperando;
     private String mensaje = "No hay esperas circulares detectadas.";
 
-    public MonitorConflictos(GestorRecursos recursos) { this.recursos = recursos; }
+    public MonitorConflictos(GestorRecursos recursos) {
+        this.recursos = recursos;
+    }
 
     public synchronized void provocar() {
-        if (activo || recuperando) throw new IllegalArgumentException("Finaliza el escenario actual antes de iniciar otro.");
-        if (!recursos.prepararConflicto("DL-A", "DL-B"))
+        if (activo || recuperando) {
+            throw new IllegalArgumentException("Finaliza el escenario actual antes de iniciar otro.");
+        }
+        if (!recursos.prepararConflicto("DL-A", "DL-B")) {
             throw new IllegalArgumentException("Montacargas 1 o el escáner están ocupados. Reintenta cuando se liberen.");
+        }
         activo = true;
         listos = new CountDownLatch(2);
         mensaje = "A retiene Montacargas 1 y espera Escáner. B retiene Escáner y espera Montacargas 1.";
@@ -34,37 +46,60 @@ public final class MonitorConflictos implements AutoCloseable {
             Thread.sleep(600);
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-        } finally { recursos.liberar(titular); }
+        } finally {
+            recursos.liberar(titular);
+        }
     }
 
-    /** Interrumpe al perdedor; el ganador obtiene el segundo recurso y el otro vuelve a espera. */
+    /**
+     * Interrumpe al perdedor; el ganador obtiene el segundo recurso y el otro vuelve a espera.
+     */
     public synchronized void resolver(boolean continuaA) {
-        if (!activo || listos.getCount() != 0) throw new IllegalArgumentException("El escenario aún no está listo para resolver.");
+        if (!activo || listos.getCount() != 0) {
+            throw new IllegalArgumentException("El escenario aún no está listo para resolver.");
+        }
         String ganador = continuaA ? "A" : "B", perdedor = continuaA ? "B" : "A";
         (continuaA ? operacionB : operacionA).cancel(true);
-        activo = false; recuperando = true;
+        activo = false;
+        recuperando = true;
         mensaje = "Continúa " + ganador + ". Se interrumpió " + perdedor + " y su operación vuelve a la lista de espera.";
-        hilos.submit(() -> {
-            String titular = "DL-" + perdedor + " (reencolado)";
-            try {
-                Thread.sleep(750);
-                while (!recursos.intentar(titular, Map.of(TipoRecurso.MONTACARGAS, 1, TipoRecurso.ESCANER, 1)))
-                    Thread.sleep(60);
-                Thread.sleep(300);
-                synchronized (this) { mensaje = "Conflicto resuelto. Ambas operaciones terminaron; " + perdedor + " fue atendida después."; }
-            } catch (InterruptedException exception) {
-                Thread.currentThread().interrupt();
-            } finally {
-                recursos.liberar(titular);
-                synchronized (this) { recuperando = false; }
-            }
-        });
+        hilos.submit(() -> atenderReencolado(perdedor));
     }
 
-    public synchronized Vista vista() { return new Vista(activo, recuperando, activo && listos.getCount() == 0, mensaje); }
-    @Override public void close() {
+    public synchronized Vista vista() {
+        return new Vista(activo, recuperando, activo && listos.getCount() == 0, mensaje);
+    }
+
+    @Override
+    public void close() {
         hilos.shutdownNow();
-        for(String titular:new String[]{"DL-A","DL-B","DL-A (reencolado)","DL-B (reencolado)"}) recursos.liberar(titular);
-        synchronized(this){activo=false;recuperando=false;}
+        for (String titular : new String[] { "DL-A", "DL-B", "DL-A (reencolado)", "DL-B (reencolado)" }) {
+            recursos.liberar(titular);
+        }
+        synchronized (this) {
+            activo = false;
+            recuperando = false;
+        }
+    }
+
+    private void atenderReencolado(String perdedor) {
+        String titular = "DL-" + perdedor + " (reencolado)";
+        try {
+            Thread.sleep(750);
+            while (!recursos.intentar(titular, Map.of(TipoRecurso.MONTACARGAS, 1, TipoRecurso.ESCANER, 1))) {
+                Thread.sleep(60);
+            }
+            Thread.sleep(300);
+            synchronized (this) {
+                mensaje = "Conflicto resuelto. Ambas operaciones terminaron; " + perdedor + " fue atendida después.";
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+        } finally {
+            recursos.liberar(titular);
+            synchronized (this) {
+                recuperando = false;
+            }
+        }
     }
 }

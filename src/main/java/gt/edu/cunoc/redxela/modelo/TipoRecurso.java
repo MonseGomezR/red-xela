@@ -1,7 +1,10 @@
 package gt.edu.cunoc.redxela.modelo;
 
-/** Capacidades físicas del centro; la asignación concurrente se gestiona aparte. */
+/**
+ * Capacidades físicas del centro; la asignación concurrente se gestiona aparte.
+ */
 public enum TipoRecurso {
+
     ESTACION_EMPAQUE("Estación de empaque", 6),
     AREA_CARGA("Área de carga", 2),
     ENCARGADO_BODEGA("Encargado de bodega", 10),
@@ -12,7 +15,7 @@ public enum TipoRecurso {
     private final String nombre;
     private final int capacidad;
 
-    TipoRecurso(String nombre, int capacidad) {
+    private TipoRecurso(String nombre, int capacidad) {
         this.nombre = nombre;
         this.capacidad = capacidad;
     }

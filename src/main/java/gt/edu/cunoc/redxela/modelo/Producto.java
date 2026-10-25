@@ -3,8 +3,11 @@ package gt.edu.cunoc.redxela.modelo;
 import java.util.Locale;
 import java.util.Objects;
 
-/** Entrada inmutable del catálogo; las existencias se administran por separado. */
+/**
+ * Entrada inmutable del catálogo; las existencias se administran por separado.
+ */
 public record Producto(String codigo, String nombre, TipoMercancia tipoMercancia) {
+
     public Producto {
         Objects.requireNonNull(codigo, "El código del producto es obligatorio.");
         Objects.requireNonNull(nombre, "El nombre del producto es obligatorio.");

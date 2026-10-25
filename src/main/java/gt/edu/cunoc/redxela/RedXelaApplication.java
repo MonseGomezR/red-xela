@@ -1,5 +1,6 @@
 package gt.edu.cunoc.redxela;
 
+import java.io.InputStream;
 import java.io.IOException;
 import java.net.URL;
 import javafx.application.Application;
@@ -11,16 +12,21 @@ import javafx.stage.Stage;
 import javafx.scene.text.Font;
 import gt.edu.cunoc.redxela.controlador.VistaPrincipalController;
 
-/** Punto de entrada de la aplicación de escritorio REDXela. */
+/**
+ * Punto de entrada de la aplicación de escritorio REDXela.
+ */
 public class RedXelaApplication extends Application {
+
     private VistaPrincipalController controlador;
 
     @Override
     public void start(Stage stage) {
         try {
-            for (String fuente : new String[]{"Inter-Regular", "Inter-Bold", "JetBrainsMono-Regular", "JetBrainsMono-Bold"}) {
-                try (var archivo = RedXelaApplication.class.getResourceAsStream("/gt/edu/cunoc/redxela/fuentes/" + fuente + ".ttf")) {
-                    if (archivo != null) Font.loadFont(archivo, 12);
+            for (String fuente : new String[] { "Inter-Regular", "Inter-Bold", "JetBrainsMono-Regular", "JetBrainsMono-Bold" }) {
+                try (InputStream archivo = RedXelaApplication.class.getResourceAsStream("/gt/edu/cunoc/redxela/fuentes/" + fuente + ".ttf")) {
+                    if (archivo != null) {
+                        Font.loadFont(archivo, 12);
+                    }
                 }
             }
             URL vista = RedXelaApplication.class.getResource("/gt/edu/cunoc/redxela/vista-principal.fxml");
@@ -52,5 +58,10 @@ public class RedXelaApplication extends Application {
         launch(args);
     }
 
-    @Override public void stop() { if (controlador != null) controlador.close(); }
+    @Override
+    public void stop() {
+        if (controlador != null) {
+            controlador.close();
+        }
+    }
 }

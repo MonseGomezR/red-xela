@@ -5,11 +5,12 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-/** Cuenta de cliente y servicio contratado para sus nuevos pedidos. */
+/**
+ * Cuenta de cliente y servicio contratado para sus nuevos pedidos.
+ */
 public record Cliente(UUID id, String nombre, String correo, NivelServicio nivelServicio) {
-    private static final Pattern CORREO_VALIDO = Pattern.compile(
-            "[^\\s@]+@[^\\s@]+\\.[^\\s@]+", Pattern.UNICODE_CHARACTER_CLASS);
 
+    private static final Pattern CORREO_VALIDO = Pattern.compile("[^\\s@]+@[^\\s@]+\\.[^\\s@]+", Pattern.UNICODE_CHARACTER_CLASS);
     public Cliente {
         Objects.requireNonNull(id, "El identificador del cliente es obligatorio.");
         Objects.requireNonNull(nombre, "El nombre es obligatorio.");

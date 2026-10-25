@@ -47,7 +47,11 @@ mvn -version
 ```
 
 En NetBeans: **Archivo > Abrir proyecto**, seleccionar esta carpeta y usar un
-JDK compatible. La ejecución desde terminal es la referencia reproducible.
+JDK compatible. Para arrancar, hacer clic derecho sobre **REDXela > Ejecutar**.
+El archivo `nbactions.xml` configura la acción **Ejecutar proyecto** para usar
+`javafx:run`, que prepara la ruta de módulos y las dependencias de JavaFX.
+Utilizar la ejecución del proyecto completo, no **Ejecutar archivo** sobre
+`RedXelaApplication.java`.
 
 ## Pruebas
 

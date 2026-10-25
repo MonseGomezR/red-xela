@@ -3,8 +3,11 @@ package gt.edu.cunoc.redxela.modelo;
 import java.time.Duration;
 import java.util.Optional;
 
-/** Clasifica la atención contratada; un número menor indica mayor prioridad. */
+/**
+ * Clasifica la atención contratada; un número menor indica mayor prioridad.
+ */
 public enum NivelServicio {
+
     EXPRES("Exprés", 1, null),
     PRIORITARIO("Prioritario", 2, Duration.ofMinutes(10)),
     ESTANDAR("Estándar", 3, Duration.ofMinutes(30)),
@@ -15,7 +18,7 @@ public enum NivelServicio {
     private final int prioridad;
     private final Duration esperaObjetivo;
 
-    NivelServicio(String nombre, int prioridad, Duration esperaObjetivo) {
+    private NivelServicio(String nombre, int prioridad, Duration esperaObjetivo) {
         this.nombre = nombre;
         this.prioridad = prioridad;
         this.esperaObjetivo = esperaObjetivo;
@@ -25,7 +28,10 @@ public enum NivelServicio {
         return prioridad;
     }
 
-    /** Exprés requiere atención inmediata, sin asignarle un plazo arbitrario. */
+    /**
+     * Exprés requiere atención inmediata, sin asignarle un plazo arbitrario.
+     * @return
+     */
     public Optional<Duration> getEsperaObjetivo() {
         return Optional.ofNullable(esperaObjetivo);
     }

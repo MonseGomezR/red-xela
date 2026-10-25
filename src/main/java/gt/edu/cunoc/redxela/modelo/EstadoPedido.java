@@ -1,7 +1,10 @@
 package gt.edu.cunoc.redxela.modelo;
 
-/** Estados que mostrarán las áreas de inventario, procesamiento y despacho. */
+/**
+ * Estados que mostrarán las áreas de inventario, procesamiento y despacho.
+ */
 public enum EstadoPedido {
+
     REGISTRADO("Registrado"),
     ESPERANDO_INVENTARIO("Esperando inventario"),
     ESPERANDO_RECURSOS("Esperando recursos"),
@@ -11,7 +14,7 @@ public enum EstadoPedido {
 
     private final String nombre;
 
-    EstadoPedido(String nombre) {
+    private EstadoPedido(String nombre) {
         this.nombre = nombre;
     }
 

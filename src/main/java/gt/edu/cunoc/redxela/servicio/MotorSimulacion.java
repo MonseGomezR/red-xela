@@ -4,192 +4,349 @@ import gt.edu.cunoc.redxela.modelo.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-/** Planificación y trabajadores reales. Un segundo real equivale a un minuto simulado a 1x. */
+/**
+ * Planificación y trabajadores reales. Un segundo real equivale a un minuto simulado a 1x.
+ */
 public final class MotorSimulacion implements AutoCloseable {
+
     private static final class Trabajo {
-        final Pedido pedido;
-        final double llegada;
-        final long secuencia;
-        EstadoPedido estado = EstadoPedido.REGISTRADO;
-        double inicio, fin, progreso;
-        String fase = "Pendiente", error = "";
-        boolean preferente;
-        Trabajo(Pedido pedido, double llegada, long secuencia) {
-            this.pedido = pedido; this.llegada = llegada; this.secuencia = secuencia;
+
+        private final Pedido pedido;
+        private final double llegada;
+        private final long secuencia;
+
+        private EstadoPedido estado = EstadoPedido.REGISTRADO;
+        private double inicio;
+        private double fin;
+        private double progreso;
+        private String fase = "Pendiente";
+        private String error = "";
+        private boolean preferente;
+
+        private Trabajo(Pedido pedido, double llegada, long secuencia) {
+            this.pedido = pedido;
+            this.llegada = llegada;
+            this.secuencia = secuencia;
         }
     }
-    public record VistaPedido(Pedido pedido, EstadoPedido estado, double progreso, double restante,
-                               double espera, String fase, String error, boolean preferente) { }
-    public record Estadisticas(int completados, double esperaMedia, double procesoMedio, int recursosEnUso,
-                                int recursosTotales, double ocupacionMedia, double minutos) { }
+
+    public record VistaPedido(
+            Pedido pedido,
+            EstadoPedido estado,
+            double progreso,
+            double restante,
+            double espera,
+            String fase,
+            String error,
+            boolean preferente
+    ) {
+    }
+
+    public record Estadisticas(
+            int completados,
+            double esperaMedia,
+            double procesoMedio,
+            int recursosEnUso,
+            int recursosTotales,
+            double ocupacionMedia,
+            double minutos
+    ) {
+    }
+
+    private static final int MAXIMO_TRABAJADORES = 8;
+    private static final long INTERVALO_RELOJ_MILISEGUNDOS = 60;
+    private static final long INTERVALO_ESPERA_MILISEGUNDOS = 40;
     private final Almacen almacen;
     private final GestorRecursos recursos;
     private final List<Trabajo> trabajos = new ArrayList<>();
-    private final ScheduledExecutorService reloj = Executors.newSingleThreadScheduledExecutor(hilos("reloj"));
-    private final ExecutorService trabajadores = Executors.newFixedThreadPool(8, hilos("pedido"));
-    private boolean activa, cerrada;
-    private double minutos, velocidad = 1, tiempoOcupado, tiempoMedido;
-    private long anterior = System.nanoTime(), secuencia;
+    private final ScheduledExecutorService reloj = Executors.newSingleThreadScheduledExecutor(new FabricaHilos("reloj"));
+    private final ExecutorService trabajadores = Executors.newFixedThreadPool(MAXIMO_TRABAJADORES, new FabricaHilos("pedido"));
+    private boolean activa;
+    private boolean cerrada;
+    private double minutos;
+    private double velocidad = 1;
+    private double tiempoOcupado;
+    private double tiempoMedido;
+    private long ultimoInstante = System.nanoTime();
+    private long secuencia;
     private PoliticaAtencion politica = PoliticaAtencion.SERVICIO;
 
     public MotorSimulacion(Almacen almacen, GestorRecursos recursos) {
-        this.almacen = almacen; this.recursos = recursos;
-        reloj.scheduleWithFixedDelay(this::tick, 0, 60, TimeUnit.MILLISECONDS);
-    }
-
-    static ThreadFactory hilos(String nombre) {
-        return tarea -> { Thread hilo = new Thread(tarea, "redxela-" + nombre); hilo.setDaemon(true); return hilo; };
+        this.almacen = almacen;
+        this.recursos = recursos;
+        reloj.scheduleWithFixedDelay(this::actualizarReloj, 0, INTERVALO_RELOJ_MILISEGUNDOS, TimeUnit.MILLISECONDS);
     }
 
     public synchronized void ingresar(Pedido pedido) {
-        if (cerrada) throw new IllegalStateException("La simulación está cerrada.");
+        if (cerrada) {
+            throw new IllegalStateException("La simulación está cerrada.");
+        }
         trabajos.add(new Trabajo(pedido, minutos, ++secuencia));
     }
-    public synchronized void activar(boolean valor) { activa = valor; anterior = System.nanoTime(); }
-    public synchronized boolean activa() { return activa; }
-    public synchronized void velocidad(double valor) {
-        if (!Double.isFinite(valor) || valor < 0.5 || valor > 8) throw new IllegalArgumentException("Velocidad no válida.");
-        velocidad = valor;
-    }
-    public synchronized void politica(PoliticaAtencion valor) { politica = Objects.requireNonNull(valor); }
-    public synchronized PoliticaAtencion politica() { return politica; }
-    public synchronized void priorizar(UUID id) {
-        Trabajo t = trabajos.stream().filter(p -> p.pedido.id().equals(id)).findFirst().orElseThrow();
-        if (t.estado == EstadoPedido.COMPLETADO || t.estado == EstadoPedido.EN_PROCESO)
-            throw new IllegalArgumentException("Selecciona un pedido que siga en espera.");
-        t.preferente = true;
+
+    public synchronized void activar(boolean valor) {
+        activa = valor;
+        ultimoInstante = System.nanoTime();
     }
 
-    private synchronized void tick() {
+    public synchronized boolean activa() {
+        return activa;
+    }
+
+    public synchronized void velocidad(double valor) {
+        if (!Double.isFinite(valor) || valor < 0.5 || valor > 8) {
+            throw new IllegalArgumentException("Velocidad no válida.");
+        }
+        velocidad = valor;
+    }
+
+    public synchronized void politica(PoliticaAtencion valor) {
+        politica = Objects.requireNonNull(valor);
+    }
+
+    public synchronized PoliticaAtencion politica() {
+        return politica;
+    }
+
+    public synchronized void priorizar(UUID id) {
+        Trabajo trabajo = trabajos
+                .stream()
+                .filter(candidato -> candidato.pedido.id().equals(id))
+                .findFirst()
+                .orElseThrow();
+        if (trabajo.estado == EstadoPedido.COMPLETADO || trabajo.estado == EstadoPedido.EN_PROCESO) {
+            throw new IllegalArgumentException("Selecciona un pedido que siga en espera.");
+        }
+        trabajo.preferente = true;
+    }
+
+    private synchronized void actualizarReloj() {
         long ahora = System.nanoTime();
-        double delta = (ahora - anterior) / 1_000_000_000.0 * velocidad;
-        anterior = ahora;
-        if (!activa || cerrada) return;
-        minutos += delta;
-        var estados = recursos.estados();
-        tiempoOcupado += delta * estados.stream().filter(e -> !e.disponible()).count();
-        tiempoMedido += delta * estados.size();
+        double minutosTranscurridos = (ahora - ultimoInstante) / 1_000_000_000.0 * velocidad;
+        ultimoInstante = ahora;
+        if (!activa || cerrada) {
+            return;
+        }
+        minutos += minutosTranscurridos;
+        List<GestorRecursos.Estado> estados = recursos.estados();
+        tiempoOcupado += minutosTranscurridos * estados
+                .stream()
+                .filter(estadoRecurso -> !estadoRecurso.disponible()).count();
+        tiempoMedido += minutosTranscurridos * estados.size();
         asignar();
     }
 
     public synchronized void paso() {
-        if (activa) throw new IllegalArgumentException("Pausa la simulación antes de avanzar un minuto.");
-        if (cerrada) return;
+        if (activa) {
+            throw new IllegalArgumentException("Pausa la simulación antes de avanzar un minuto.");
+        }
+        if (cerrada) {
+            return;
+        }
         minutos += 1;
         asignar();
     }
 
     private void asignar() {
-        int activos = (int) trabajos.stream().filter(t -> t.estado == EstadoPedido.EN_PROCESO).count();
+        int activos = (int) trabajos.stream().filter(trabajo -> trabajo.estado == EstadoPedido.EN_PROCESO).count();
         List<Trabajo> candidatos = pendientes();
         // Una reserva pendiente no debe anular un cambio de política ni la llegada de mayor prioridad.
-        candidatos.forEach(t -> almacen.liberar(t.pedido.id()));
-        for (Trabajo t : candidatos) {
-            if (activos >= 8) break;
-            if (!almacen.reservar(t.pedido.id(), t.pedido.detalles())) {
-                t.estado = EstadoPedido.ESPERANDO_INVENTARIO; t.fase = "Sin existencias"; continue;
+        candidatos.forEach(trabajo -> almacen.liberar(trabajo.pedido.id()));
+        for (Trabajo trabajo : candidatos) {
+            if (activos >= MAXIMO_TRABAJADORES) {
+                break;
             }
-            if (!recursos.intentar(titular(t), necesidades(t.pedido))) {
-                t.estado = EstadoPedido.ESPERANDO_RECURSOS; t.fase = "Recursos ocupados"; continue;
+            if (!almacen.reservar(trabajo.pedido.id(), trabajo.pedido.detalles())) {
+                trabajo.estado = EstadoPedido.ESPERANDO_INVENTARIO;
+                trabajo.fase = "Sin existencias";
+                continue;
             }
-            t.estado = EstadoPedido.EN_PROCESO; t.inicio = minutos; t.fase = "Preparación";
+            if (!recursos.intentar(titular(trabajo), necesidades(trabajo.pedido))) {
+                trabajo.estado = EstadoPedido.ESPERANDO_RECURSOS;
+                trabajo.fase = "Recursos ocupados";
+                continue;
+            }
+            trabajo.estado = EstadoPedido.EN_PROCESO;
+            trabajo.inicio = minutos;
+            trabajo.fase = "Preparación";
             activos++;
-            trabajadores.submit(() -> procesar(t));
+            trabajadores.submit(() -> procesar(trabajo));
         }
     }
 
-    private void procesar(Trabajo t) {
+    private void procesar(Trabajo trabajo) {
         boolean terminado = false;
         try {
-            avanzar(t, Math.max(1, t.pedido.getTotalArticulos() * 0.25), 0, 0.85);
-            recursos.liberar(titular(t));
-            synchronized (this) { t.fase = "Esperando despacho"; }
-            while (true) {
-                synchronized (this) {
-                    if (cerrada) throw new InterruptedException();
-                    if (recursos.intentar(titular(t), Map.of(TipoRecurso.ESCANER, 1, TipoRecurso.AREA_CARGA, 1))) break;
-                }
-                Thread.sleep(40);
-            }
-            synchronized (this) { t.fase = "Despacho"; }
-            avanzar(t, 0.6, 0.85, 1);
+            avanzar(trabajo, Math.max(1, trabajo.pedido.getTotalArticulos() * 0.25), 0, 0.85);
+            recursos.liberar(titular(trabajo));
             synchronized (this) {
-                almacen.despachar(t.pedido.id());
-                t.progreso = 1; t.fin = minutos; t.estado = EstadoPedido.COMPLETADO; t.fase = "Entregado";
+                trabajo.fase = "Esperando despacho";
+            }
+            esperarRecursosDespacho(trabajo);
+            synchronized (this) {
+                trabajo.fase = "Despacho";
+            }
+            avanzar(trabajo, 0.6, 0.85, 1);
+            synchronized (this) {
+                almacen.despachar(trabajo.pedido.id());
+                trabajo.progreso = 1;
+                trabajo.fin = minutos;
+                trabajo.estado = EstadoPedido.COMPLETADO;
+                trabajo.fase = "Entregado";
                 terminado = true;
             }
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
         } catch (RuntimeException exception) {
-            synchronized (this) { t.error = exception.getMessage(); }
+            synchronized (this) {
+                trabajo.error = exception.getMessage();
+            }
         } finally {
             synchronized (this) {
-                recursos.liberar(titular(t));
+                recursos.liberar(titular(trabajo));
                 if (!terminado) {
-                    almacen.liberar(t.pedido.id());
-                    t.estado = EstadoPedido.REGISTRADO; t.progreso = 0; t.fase = "Reencolado";
+                    almacen.liberar(trabajo.pedido.id());
+                    trabajo.estado = EstadoPedido.REGISTRADO;
+                    trabajo.progreso = 0;
+                    trabajo.fase = "Reencolado";
                 }
             }
         }
     }
 
-    private void avanzar(Trabajo t, double duracion, double desde, double hasta) throws InterruptedException {
+    private void avanzar(Trabajo trabajo, double duracion, double desde, double hasta) throws InterruptedException {
         double inicio;
-        synchronized (this) { inicio = minutos; }
+        synchronized (this) {
+            inicio = minutos;
+        }
         while (true) {
             synchronized (this) {
-                if (cerrada) throw new InterruptedException();
+                if (cerrada) {
+                    throw new InterruptedException();
+                }
                 double fraccion = Math.min(1, (minutos - inicio) / duracion);
-                t.progreso = desde + (hasta - desde) * fraccion;
-                if (fraccion >= 1) return;
+                trabajo.progreso = desde + (hasta - desde) * fraccion;
+                if (fraccion >= 1) {
+                    return;
+                }
             }
-            Thread.sleep(40);
+            Thread.sleep(INTERVALO_ESPERA_MILISEGUNDOS);
         }
     }
 
     private List<Trabajo> pendientes() {
-        Comparator<Trabajo> orden = switch (politica) {
-            case FIFO -> Comparator.comparingLong(t -> t.secuencia);
-            case SJF -> Comparator.comparingInt(t -> t.pedido.getTotalArticulos());
-            case SERVICIO -> Comparator.comparingInt(t -> t.pedido.nivelServicio().getPrioridad());
-            case ENVEJECIMIENTO -> Comparator.comparingInt(t -> Math.max(1,
-                    t.pedido.nivelServicio().getPrioridad() - (int) ((minutos - t.llegada) / 10)));
-        };
-        return trabajos.stream().filter(t -> t.estado != EstadoPedido.COMPLETADO && t.estado != EstadoPedido.EN_PROCESO)
-                .sorted(Comparator.<Trabajo>comparingInt(t -> t.preferente ? 0 : 1).thenComparing(orden)
-                        .thenComparingLong(t -> t.secuencia)).toList();
+        Comparator<Trabajo> orden = crearOrdenAtencion();
+        return trabajos
+                .stream()
+                .filter(trabajo -> trabajo.estado != EstadoPedido.COMPLETADO && trabajo.estado != EstadoPedido.EN_PROCESO)
+                .sorted(Comparator.<Trabajo>comparingInt(trabajo -> trabajo.preferente ? 0 : 1)
+                .thenComparing(orden)
+                .thenComparingLong(trabajo -> trabajo.secuencia))
+                .toList();
     }
-    public synchronized List<VistaPedido> espera() { return pendientes().stream().map(this::vista).toList(); }
-    public synchronized List<VistaPedido> pedidos() { return trabajos.stream().map(this::vista).toList(); }
-    private VistaPedido vista(Trabajo t) {
-        double trabajo = Math.max(1, t.pedido.getTotalArticulos() * 0.25) + 0.6;
-        double espera = (t.estado == EstadoPedido.EN_PROCESO || t.estado == EstadoPedido.COMPLETADO ? t.inicio : minutos) - t.llegada;
-        return new VistaPedido(t.pedido, t.estado, t.progreso, trabajo * (1 - t.progreso),
-                Math.max(0, espera), t.fase, t.error, t.preferente);
+
+    public synchronized List<VistaPedido> espera() {
+        return pendientes().stream().map(this::vista).toList();
     }
+
+    public synchronized List<VistaPedido> pedidos() {
+        return trabajos.stream().map(this::vista).toList();
+    }
+
+    private VistaPedido vista(Trabajo trabajo) {
+        double duracionTotal = Math.max(1, trabajo.pedido.getTotalArticulos() * 0.25) + 0.6;
+        double espera = (trabajo.estado == EstadoPedido.EN_PROCESO || trabajo.estado == EstadoPedido.COMPLETADO ? trabajo.inicio : minutos) - trabajo.llegada;
+        return new VistaPedido(
+                trabajo.pedido,
+                trabajo.estado,
+                trabajo.progreso,
+                duracionTotal * (1 - trabajo.progreso),
+                Math.max(0, espera),
+                trabajo.fase,
+                trabajo.error,
+                trabajo.preferente
+        );
+    }
+
     public synchronized Estadisticas estadisticas() {
-        var completados = trabajos.stream().filter(t -> t.estado == EstadoPedido.COMPLETADO).toList();
-        var unidades = recursos.estados();
-        return new Estadisticas(completados.size(), completados.stream().mapToDouble(t -> t.inicio - t.llegada).average().orElse(0),
-                completados.stream().mapToDouble(t -> t.fin - t.inicio).average().orElse(0),
-                (int) unidades.stream().filter(e -> !e.disponible()).count(), unidades.size(),
-                tiempoMedido == 0 ? 0 : tiempoOcupado / tiempoMedido, minutos);
+        List<Trabajo> completados = trabajos
+                .stream()
+                .filter(trabajo -> trabajo.estado == EstadoPedido.COMPLETADO)
+                .toList();
+        List<GestorRecursos.Estado> unidades = recursos.estados();
+        double esperaMedia = completados.stream()
+                .mapToDouble(trabajo -> trabajo.inicio - trabajo.llegada)
+                .average()
+                .orElse(0);
+        double procesoMedio = completados.stream()
+                .mapToDouble(trabajo -> trabajo.fin - trabajo.inicio)
+                .average()
+                .orElse(0);
+        int recursosEnUso = (int) unidades.stream()
+                .filter(estadoRecurso -> !estadoRecurso.disponible())
+                .count();
+        double ocupacionMedia = tiempoMedido == 0 ? 0 : tiempoOcupado / tiempoMedido;
+
+        return new Estadisticas(completados.size(), esperaMedia, procesoMedio,
+                recursosEnUso, unidades.size(), ocupacionMedia, minutos);
     }
-    private String titular(Trabajo t) { return "P-" + t.pedido.id().toString().substring(0, 8); }
+
+    private String titular(Trabajo trabajo) {
+        return "P-" + trabajo.pedido.id().toString().substring(0, 8);
+    }
+
     private Map<TipoRecurso, Integer> necesidades(Pedido pedido) {
         Map<TipoRecurso, Integer> resultado = new EnumMap<>(TipoRecurso.class);
         // Los tipos se preparan usando la mayor cantidad necesaria de cada recurso, sin multiplicar por unidades.
-        pedido.detalles().forEach(d -> d.producto().tipoMercancia().getRecursosRequeridos()
-                .forEach((tipo, cantidad) -> resultado.merge(tipo, cantidad, Math::max)));
-        return resultado;
-    }
-    @Override public void close() {
-        synchronized (this) { cerrada = true; activa = false; }
-        reloj.shutdownNow(); trabajadores.shutdownNow();
-        synchronized (this) {
-            for (Trabajo t : trabajos) {
-                almacen.liberar(t.pedido.id()); recursos.liberar(titular(t));
+        for (DetallePedido detalle : pedido.detalles()) {
+            Map<TipoRecurso, Integer> requeridos = detalle.producto().tipoMercancia().getRecursosRequeridos();
+            for (Map.Entry<TipoRecurso, Integer> recurso : requeridos.entrySet()) {
+                resultado.merge(recurso.getKey(), recurso.getValue(), Math::max);
             }
         }
+        return resultado;
+    }
+
+    @Override
+    public void close() {
+        synchronized (this) {
+            cerrada = true;
+            activa = false;
+        }
+        reloj.shutdownNow();
+        trabajadores.shutdownNow();
+        synchronized (this) {
+            for (Trabajo trabajo : trabajos) {
+                almacen.liberar(trabajo.pedido.id());
+                recursos.liberar(titular(trabajo));
+            }
+        }
+    }
+
+    /** Espera sin retener el monitor entre intentos para permitir pausas y cierre. */
+    private void esperarRecursosDespacho(Trabajo trabajo) throws InterruptedException {
+        while (true) {
+            synchronized (this) {
+                if (cerrada) {
+                    throw new InterruptedException();
+                }
+                if (recursos.intentar(titular(trabajo), Map.of(TipoRecurso.ESCANER, 1, TipoRecurso.AREA_CARGA, 1))) {
+                    break;
+                }
+            }
+            Thread.sleep(INTERVALO_ESPERA_MILISEGUNDOS);
+        }
+    }
+
+    private Comparator<Trabajo> crearOrdenAtencion() {
+        return switch (politica) {
+            case FIFO -> Comparator.comparingLong(trabajo -> trabajo.secuencia);
+            case SJF -> Comparator.comparingInt(trabajo -> trabajo.pedido.getTotalArticulos());
+            case SERVICIO -> Comparator.comparingInt(trabajo -> trabajo.pedido.nivelServicio().getPrioridad());
+            case ENVEJECIMIENTO -> Comparator.comparingInt(trabajo -> Math.max(
+                    1,
+                    trabajo.pedido.nivelServicio().getPrioridad() - (int) ((minutos - trabajo.llegada) / 10)
+            ));
+        };
     }
 }

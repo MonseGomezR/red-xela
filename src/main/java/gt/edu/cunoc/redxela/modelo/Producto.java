@@ -8,6 +8,7 @@ import java.util.Objects;
  */
 public record Producto(String codigo, String nombre, TipoMercancia tipoMercancia) {
 
+    /** Normaliza el código para comparar productos aunque se escriban en minúsculas. */
     public Producto {
         Objects.requireNonNull(codigo, "El código del producto es obligatorio.");
         Objects.requireNonNull(nombre, "El nombre del producto es obligatorio.");

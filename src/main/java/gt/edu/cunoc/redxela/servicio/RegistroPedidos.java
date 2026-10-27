@@ -21,6 +21,7 @@ public final class RegistroPedidos {
         this.clientes = Objects.requireNonNull(clientes);
     }
 
+    /** Comprueba cliente y productos antes de conservar el pedido en orden de llegada. */
     public synchronized Pedido registrar(UUID clienteId, List<DetallePedido> detalles) {
         Cliente cliente = clientes.buscarPorId(clienteId).orElseThrow(() -> new IllegalArgumentException("Selecciona un cliente registrado."));
         Pedido pedido = Pedido.crear(cliente.id(), cliente.nivelServicio(), detalles);
@@ -34,6 +35,7 @@ public final class RegistroPedidos {
         return pedido;
     }
 
+    /** Devuelve una copia de los pedidos registrados; su avance lo administra el motor. */
     public synchronized List<Pedido> getPedidos() {
         return List.copyOf(pedidos);
     }

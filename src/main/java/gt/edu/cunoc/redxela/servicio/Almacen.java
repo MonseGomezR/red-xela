@@ -6,6 +6,7 @@ import java.util.*;
 
 /**
  * Almacén de dos pasillos, dos niveles y doce posiciones por nivel.
+ * synchronized evita que dos hilos reserven o descuenten las mismas unidades al mismo tiempo.
  */
 public final class Almacen {
 
@@ -16,6 +17,7 @@ public final class Almacen {
     private final List<List<Tramo>> celdas = new ArrayList<>();
     private final Map<UUID, List<Asignacion>> reservas = new HashMap<>();
 
+    /** Parte de un lote que ocupa una celda; puede tener unidades apartadas para pedidos. */
     private static final class Tramo {
 
         private final UUID lote;
@@ -30,9 +32,11 @@ public final class Almacen {
         }
     }
 
+    /** Indica de qué parte del lote se apartaron las unidades de un pedido. */
     private record Asignacion(Tramo tramo, int cantidad) {
     }
 
+    /** Datos de una ubicación que se muestran en el mapa del almacén. */
     public record Celda(
             int indice,
             String ubicacion,
@@ -46,6 +50,7 @@ public final class Almacen {
     public record Resumen(int capacidad, int unidades, int reservadas, int libres, double fragmentacion) {
     }
 
+    /** Crea 48 ubicaciones vacías con capacidad total de 960 unidades. */
     public Almacen() {
         for (int i = 0; i < PASILLOS * NIVELES * COLUMNAS; i++) {
             celdas.add(new ArrayList<>());
@@ -60,17 +65,20 @@ public final class Almacen {
         if (cantidad <= 0) {
             throw new IllegalArgumentException("La cantidad recibida debe ser positiva.");
         }
-        int espacio = celdas
-                .stream()
-                .filter(celda -> admite(celda, producto))
-                .mapToInt(celda -> UNIDADES_POR_CELDA - unidades(celda)).sum();
+        int espacio = 0;
+        for (List<Tramo> celda : celdas) {
+            if (admite(celda, producto)) {
+                espacio += UNIDADES_POR_CELDA - unidades(celda);
+            }
+        }
         if (cantidad > espacio) {
             throw new IllegalArgumentException("No hay espacio suficiente para ese lote.");
         }
         UUID lote = UUID.randomUUID();
         int pendiente = cantidad;
         // Primero completa ubicaciones del mismo producto y luego utiliza las libres.
-        for (boolean vacias : new boolean[] { false, true }) {
+        for (int pasada = 0; pasada < 2; pasada++) {
+            boolean vacias = pasada == 1;
             for (List<Tramo> celda : celdas) {
                 if (pendiente == 0) {
                     break;
@@ -88,20 +96,30 @@ public final class Almacen {
         return lote;
     }
 
+    /** Cuenta todas las unidades del producto, incluidas las que están reservadas. */
     public synchronized int stock(Producto producto) {
-        return celdas
-                .stream()
-                .flatMap(Collection::stream)
-                .filter(tramo -> tramo.producto.equals(producto))
-                .mapToInt(tramo -> tramo.cantidad).sum();
+        int total = 0;
+        for (List<Tramo> celda : celdas) {
+            for (Tramo tramo : celda) {
+                if (tramo.producto.equals(producto)) {
+                    total += tramo.cantidad;
+                }
+            }
+        }
+        return total;
     }
 
+    /** Cuenta solo lo que todavía se puede asignar a otro pedido. */
     public synchronized int disponible(Producto producto) {
-        return celdas
-                .stream()
-                .flatMap(Collection::stream)
-                .filter(tramo -> tramo.producto.equals(producto))
-                .mapToInt(tramo -> tramo.cantidad - tramo.reservado).sum();
+        int total = 0;
+        for (List<Tramo> celda : celdas) {
+            for (Tramo tramo : celda) {
+                if (tramo.producto.equals(producto)) {
+                    total += tramo.cantidad - tramo.reservado;
+                }
+            }
+        }
+        return total;
     }
 
     /** Devuelve las cantidades de todos los productos en una sola lectura. */
@@ -129,7 +147,8 @@ public final class Almacen {
         }
         Map<Producto, Long> cantidades = new HashMap<>();
         for (DetallePedido detalle : detalles) {
-            cantidades.merge(detalle.producto(), (long) detalle.cantidad(), Long::sum);
+            long anterior = cantidades.getOrDefault(detalle.producto(), 0L);
+            cantidades.put(detalle.producto(), anterior + detalle.cantidad());
         }
         for (Map.Entry<Producto, Long> productoReservado : cantidades.entrySet()) {
             if (disponible(productoReservado.getKey()) < productoReservado.getValue()) {
@@ -157,13 +176,17 @@ public final class Almacen {
         return true;
     }
 
+    /** Devuelve las unidades reservadas a disponibilidad sin descontar existencias. */
     public synchronized void liberar(UUID pedido) {
         List<Asignacion> asignaciones = reservas.remove(pedido);
         if (asignaciones != null) {
-            asignaciones.forEach(asignacion -> asignacion.tramo.reservado -= asignacion.cantidad);
+            for (Asignacion asignacion : asignaciones) {
+                asignacion.tramo.reservado -= asignacion.cantidad;
+            }
         }
     }
 
+    /** Descuenta las unidades una sola vez, cuando termina el despacho del pedido. */
     public synchronized void despachar(UUID pedido) {
         List<Asignacion> asignaciones = reservas.remove(pedido);
         if (asignaciones == null) {
@@ -173,7 +196,13 @@ public final class Almacen {
             asignacion.tramo.reservado -= asignacion.cantidad;
             asignacion.tramo.cantidad -= asignacion.cantidad;
         }
-        celdas.forEach(celda -> celda.removeIf(tramo -> tramo.cantidad == 0));
+        for (List<Tramo> celda : celdas) {
+            for (int i = celda.size() - 1; i >= 0; i--) {
+                if (celda.get(i).cantidad == 0) {
+                    celda.remove(i);
+                }
+            }
+        }
     }
 
     /**
@@ -183,12 +212,12 @@ public final class Almacen {
         if (!reservas.isEmpty()) {
             throw new IllegalStateException("Espera a que terminen las reservas antes de optimizar.");
         }
-        List<Tramo> tramos = celdas
-                .stream()
-                .flatMap(Collection::stream)
-                .sorted(Comparator.comparing(tramo -> tramo.producto.codigo()))
-                .toList();
-        celdas.forEach(List::clear);
+        List<Tramo> tramos = new ArrayList<>();
+        for (List<Tramo> celda : celdas) {
+            tramos.addAll(celda);
+            celda.clear();
+        }
+        tramos.sort(Comparator.comparing(tramo -> tramo.producto.codigo()));
         int indice = 0;
         for (Tramo original : tramos) {
             int pendiente = original.cantidad;
@@ -205,6 +234,7 @@ public final class Almacen {
         }
     }
 
+    /** Convierte las ubicaciones y sus lotes a datos de lectura para la pantalla. */
     public synchronized List<Celda> getCeldas() {
         List<Celda> resultado = new ArrayList<>();
         for (int i = 0; i < celdas.size(); i++) {
@@ -214,18 +244,25 @@ public final class Almacen {
             int nivel = (i % celdasPorPasillo) / COLUMNAS + 1;
             int columna = i % COLUMNAS + 1;
             String ubicacion = "%s-%d-%02d".formatted(pasillo, nivel, columna);
+            int reservadas = 0;
+            List<String> lotes = new ArrayList<>();
+            for (Tramo tramo : celda) {
+                reservadas += tramo.reservado;
+                lotes.add(tramo.lote + ": " + tramo.cantidad + "u");
+            }
             resultado.add(new Celda(
                     i,
                     ubicacion,
                     celda.isEmpty() ? "" : celda.get(0).producto.codigo(),
                     unidades(celda),
-                    celda.stream().mapToInt(tramo -> tramo.reservado).sum(),
-                    celda.stream().map(tramo -> tramo.lote + ": " + tramo.cantidad + "u").toList()
+                    reservadas,
+                    List.copyOf(lotes)
             ));
         }
         return List.copyOf(resultado);
     }
 
+    /** Mide la capacidad, las reservas y el espacio libre fuera del mayor bloque seguido. */
     public synchronized Resumen resumen() {
         int libres = 0;
         int mayorBloque = 0;
@@ -234,7 +271,9 @@ public final class Almacen {
         int reservado = 0;
         for (List<Tramo> celda : celdas) {
             total += unidades(celda);
-            reservado += celda.stream().mapToInt(tramo -> tramo.reservado).sum();
+            for (Tramo tramo : celda) {
+                reservado += tramo.reservado;
+            }
             if (celda.isEmpty()) {
                 libres++;
                 bloque++;
@@ -247,11 +286,17 @@ public final class Almacen {
         return new Resumen(celdas.size() * UNIDADES_POR_CELDA, total, reservado, libres, fragmentacion);
     }
 
+    /** Una celda puede estar vacía o guardar lotes del mismo producto. */
     private boolean admite(List<Tramo> celda, Producto producto) {
         return celda.isEmpty() || celda.get(0).producto.equals(producto);
     }
 
+    /** Suma las unidades de todos los lotes que comparten una celda. */
     private int unidades(List<Tramo> celda) {
-        return celda.stream().mapToInt(tramo -> tramo.cantidad).sum();
+        int total = 0;
+        for (Tramo tramo : celda) {
+            total += tramo.cantidad;
+        }
+        return total;
     }
 }

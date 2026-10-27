@@ -36,12 +36,14 @@ public final class VistaPedido extends VBox {
         actualizar();
     }
 
+    /** Actualiza el servicio visible al elegir una cuenta registrada. */
     private void configurarCliente() {
         selectorCliente.setPromptText("Selecciona una cuenta registrada");
         selectorCliente.setMaxWidth(Double.MAX_VALUE);
         selectorCliente.valueProperty().addListener((observable, anterior, actual) -> actualizarServicio(actual));
     }
 
+    /** Muestra el servicio de la cuenta; no lo decide el tipo de mercancía. */
     private void actualizarServicio(Cliente cuenta) {
         if (cuenta == null) {
             servicio.setText("Selecciona una cuenta");
@@ -50,6 +52,7 @@ public final class VistaPedido extends VBox {
         servicio.setText("N" + cuenta.nivelServicio().getPrioridad() + " - " + cuenta.nivelServicio());
     }
 
+    /** Usa el catálogo fijo y muestra el stock del producto seleccionado. */
     private void configurarProductos() {
         selectorProducto.getItems().setAll(CatalogoProductos.getProductos());
         selectorProducto.getSelectionModel().selectFirst();
@@ -59,6 +62,7 @@ public final class VistaPedido extends VBox {
         campoCantidad.setMaxWidth(120);
     }
 
+    /** Muestra el borrador y permite cargar una línea para editar su cantidad. */
     private void configurarTabla() {
         detalles.getColumns().add(columna("Producto", detalle -> detalle.producto().nombre(), 350));
         detalles.getColumns().add(columna(
@@ -78,6 +82,7 @@ public final class VistaPedido extends VBox {
         });
     }
 
+    /** Reúne datos del cliente, productos y acciones para construir el pedido. */
     private VBox crearFormulario(Runnable registrarCliente) {
         HBox cuenta = fila(selectorCliente, boton("Registrar cliente", "boton-secundario", registrarCliente));
         HBox.setHgrow(selectorCliente, Priority.ALWAYS);
@@ -108,11 +113,13 @@ public final class VistaPedido extends VBox {
         return formulario;
     }
 
+    /** Quita solo la línea seleccionada del borrador y recalcula el total. */
     private void quitarProducto() {
         detalles.getItems().remove(detalles.getSelectionModel().getSelectedItem());
         actualizarTotal();
     }
 
+    /** Valida la cantidad y agrega o reemplaza la línea del producto seleccionado. */
     private void guardarProducto() {
         try {
             if (selectorProducto.getValue() == null) {
@@ -139,6 +146,7 @@ public final class VistaPedido extends VBox {
         }
     }
 
+    /** Comprueba que el total pueda representarse antes de modificar el borrador. */
     private void validarTotal(DetallePedido nuevo) {
         long totalUnidades = nuevo.cantidad();
         for (DetallePedido detalle : detalles.getItems()) {
@@ -151,6 +159,7 @@ public final class VistaPedido extends VBox {
         }
     }
 
+    /** Busca la posición del producto para editarlo sin duplicar sus líneas. */
     private int buscarProducto(Producto productoBuscado) {
         int indice = -1;
         for (int posicion = 0; posicion < detalles.getItems().size(); posicion++) {
@@ -161,6 +170,7 @@ public final class VistaPedido extends VBox {
         return indice;
     }
 
+    /** Entrega el borrador a los servicios y lo limpia únicamente si el registro terminó bien. */
     private void registrar() {
         try {
             if (selectorCliente.getValue() == null) {
@@ -185,11 +195,16 @@ public final class VistaPedido extends VBox {
         }
     }
 
+    /** Suma las cantidades que se muestran debajo del borrador. */
     private void actualizarTotal() {
-        long unidades = detalles.getItems().stream().mapToLong(DetallePedido::cantidad).sum();
+        long unidades = 0;
+        for (DetallePedido detalle : detalles.getItems()) {
+            unidades += detalle.cantidad();
+        }
         total.setText(detalles.getItems().size() + " productos, " + unidades + " unidades");
     }
 
+    /** Informa lo disponible; registrar un pedido no requiere tener stock inmediato. */
     private void actualizarExistencias() {
         Producto seleccionado = selectorProducto.getValue();
         if (seleccionado == null) {
@@ -201,11 +216,13 @@ public final class VistaPedido extends VBox {
                 + "Los pedidos sin stock suficiente quedan en espera.");
     }
 
+    /** Recibe la cuenta elegida desde la pantalla de clientes. */
     public void seleccionarCliente(Cliente cuenta) {
         actualizar();
         selectorCliente.setValue(cuenta);
     }
 
+    /** Renueva cuentas y existencias sin borrar el borrador del pedido. */
     public void actualizar() {
         List<Cliente> cuentas = centro.getClientes().getClientes();
         if (!selectorCliente.getItems().equals(cuentas)) {

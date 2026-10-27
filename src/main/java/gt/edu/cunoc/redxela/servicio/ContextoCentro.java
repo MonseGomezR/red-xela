@@ -21,6 +21,7 @@ public final class ContextoCentro implements AutoCloseable {
     private final ComparadorPoliticas comparador = new ComparadorPoliticas();
     private final ScheduledExecutorService generador = Executors.newSingleThreadScheduledExecutor(new FabricaHilos("llegadas"));
     private final List<Cliente> automaticos = new ArrayList<>();
+    // volatile permite que el generador vea los cambios hechos desde la pantalla.
     private volatile boolean automatico = true;
     private volatile boolean estres;
     private volatile boolean cerrado;
@@ -28,12 +29,14 @@ public final class ContextoCentro implements AutoCloseable {
     private int secuenciaManual = 1;
     private final Map<UUID, String> identificadores = new HashMap<>();
 
+    /** Carga los datos iniciales y programa la revisión periódica de nuevas llegadas. */
     public ContextoCentro() {
         crearClientesSimulados();
         cargarExistenciasIniciales();
         generador.scheduleWithFixedDelay(this::generar, 100, 100, TimeUnit.MILLISECONDS);
     }
 
+    /** Guarda el pedido y lo entrega al motor dentro de la misma operación. */
     public synchronized Pedido registrar(UUID cliente, List<DetallePedido> detalles) {
         if (cerrado) {
             throw new IllegalStateException("La sesión está cerrada.");
@@ -43,10 +46,12 @@ public final class ContextoCentro implements AutoCloseable {
         return pedido;
     }
 
+    /** Permite activar o detener las llegadas automáticas sin detener los pedidos existentes. */
     public void automatico(boolean valor) {
         automatico = valor;
     }
 
+    /** Propone un código manual que todavía no se ha usado en la sesión. */
     public synchronized String siguienteIdManual() {
         while (identificadores.containsValue("MAN-" + secuenciaManual)) {
             secuenciaManual++;
@@ -58,6 +63,7 @@ public final class ContextoCentro implements AutoCloseable {
         return identificador(pedido.id());
     }
 
+    /** Busca el código manual o muestra una versión corta del identificador interno. */
     public synchronized String identificador(UUID id) {
         return identificadores.getOrDefault(
                 id,
@@ -65,6 +71,7 @@ public final class ContextoCentro implements AutoCloseable {
         );
     }
 
+    /** Valida el código visible y registra el pedido con el servicio de su cliente. */
     public synchronized Pedido registrarManual(String id, UUID clienteId, List<DetallePedido> detalles) {
         if (cerrado) {
             throw new IllegalStateException("La sesión está cerrada.");
@@ -90,6 +97,7 @@ public final class ContextoCentro implements AutoCloseable {
         return automatico;
     }
 
+    /** Cambia la frecuencia y el tamaño de los pedidos que crea el generador. */
     public void estres(boolean valor) {
         estres = valor;
     }
@@ -98,6 +106,7 @@ public final class ContextoCentro implements AutoCloseable {
         return estres;
     }
 
+    /** Al llegar el siguiente instante simulado, crea un pedido con cliente y producto al azar. */
     private void generar() {
         if (cerrado || !motor.activa()) {
             return;
@@ -121,16 +130,20 @@ public final class ContextoCentro implements AutoCloseable {
         }
     }
 
+    /** Cierra primero las llegadas y después los servicios que pueden tener trabajo pendiente. */
     @Override
-    public synchronized void close() {
-        cerrado = true;
-        generador.shutdownNow();
+    public void close() {
+        synchronized (this) {
+            cerrado = true;
+        }
+        FabricaHilos.detener(generador);
         comparador.close();
         recepcion.close();
         conflictos.close();
         motor.close();
     }
 
+    /** Prepara una cuenta de simulación por cada nivel de servicio. */
     private void crearClientesSimulados() {
         for (NivelServicio nivel : NivelServicio.values()) {
             automaticos.add(clientes.registrar(
@@ -141,6 +154,7 @@ public final class ContextoCentro implements AutoCloseable {
         }
     }
 
+    /** Guarda 60 unidades de cada producto usando las mismas reglas del almacén. */
     private void cargarExistenciasIniciales() {
         for (Producto producto : CatalogoProductos.getProductos()) {
             almacen.recibir(producto, EXISTENCIAS_INICIALES_POR_PRODUCTO);

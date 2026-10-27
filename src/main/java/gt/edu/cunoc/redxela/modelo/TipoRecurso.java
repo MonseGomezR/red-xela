@@ -20,6 +20,7 @@ public enum TipoRecurso {
         this.capacidad = capacidad;
     }
 
+    /** Cantidad de unidades físicas de este recurso disponibles en el centro. */
     public int getCapacidad() {
         return capacidad;
     }

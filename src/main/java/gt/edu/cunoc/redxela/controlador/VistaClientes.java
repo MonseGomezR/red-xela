@@ -33,6 +33,7 @@ public final class VistaClientes extends VBox {
         actualizar();
     }
 
+    /** Prepara los datos de la cuenta y los cinco servicios disponibles. */
     private void configurarCampos() {
         nombre.setPromptText("Nombre completo");
         correo.setPromptText("Correo electrónico");
@@ -41,6 +42,7 @@ public final class VistaClientes extends VBox {
         nivel.setMaxWidth(Double.MAX_VALUE);
     }
 
+    /** Construye los campos que se envían al registro de clientes. */
     private VBox crearFormulario() {
         VBox formulario = tarjeta(
                 tituloIcono(Feather.USER, "REGISTRAR CLIENTE", "titulo-tarjeta"),
@@ -54,6 +56,7 @@ public final class VistaClientes extends VBox {
         return formulario;
     }
 
+    /** Define cómo se muestran y ordenan las cuentas registradas. */
     private void configurarTabla() {
         cuentas.getColumns().add(columna("Cliente", Cliente::nombre, 260));
         cuentas.getColumns().add(columna("Correo electrónico", Cliente::correo, 300));
@@ -63,6 +66,7 @@ public final class VistaClientes extends VBox {
         cuentas.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
     }
 
+    /** Permite pasar la cuenta seleccionada al formulario de pedidos. */
     private VBox crearListado(Consumer<Cliente> usarCuenta) {
         Button usar = boton("Crear pedido con esta cuenta", "boton-secundario", () -> {
             Cliente cliente = cuentas.getSelectionModel().getSelectedItem();
@@ -74,6 +78,7 @@ public final class VistaClientes extends VBox {
         return new VBox(18, texto("CUENTAS REGISTRADAS", "titulo-tarjeta"), cuentas, usar);
     }
 
+    /** Valida el formulario mediante el servicio y selecciona la nueva cuenta. */
     private void registrar() {
         try {
             if (nivel.getValue() == null) {
@@ -91,11 +96,14 @@ public final class VistaClientes extends VBox {
         }
     }
 
+    /** Añade las nuevas cuentas a la tabla sin perder selección ni ordenación. */
     public void actualizar() {
         List<Cliente> lista = centro.getClientes().getClientes();
-        if (!cuentas.getItems().equals(lista)) {
+        // Las cuentas solo se agregan; ordenar la tabla no cambia el registro.
+        if (cuentas.getItems().size() != lista.size()) {
             Cliente seleccion = cuentas.getSelectionModel().getSelectedItem();
             cuentas.getItems().setAll(lista);
+            cuentas.sort();
             if (seleccion != null) {
                 cuentas.getSelectionModel().select(seleccion);
             }

@@ -19,6 +19,7 @@ public record Pedido(
         Instant creadoEn
 ) {
 
+    /** Valida los datos, copia los detalles y evita productos repetidos o totales demasiado grandes. */
     public Pedido {
         Objects.requireNonNull(id, "El identificador del pedido es obligatorio.");
         Objects.requireNonNull(clienteId, "El cliente es obligatorio.");
@@ -30,7 +31,7 @@ public record Pedido(
         if (detalles.isEmpty()) {
             throw new IllegalArgumentException("El pedido debe contener al menos un producto.");
         }
-        Set<String> codigos = new HashSet<String>();
+        Set<String> codigos = new HashSet<>();
         int total = 0;
         for (DetallePedido detalle : detalles) {
             if (!codigos.add(detalle.producto().codigo())) {
@@ -62,6 +63,10 @@ public record Pedido(
      * Estimación base de trabajo que utilizarán las políticas de planificación.
      */
     public int getTotalArticulos() {
-        return detalles.stream().mapToInt(DetallePedido::cantidad).sum();
+        int total = 0;
+        for (DetallePedido detalle : detalles) {
+            total += detalle.cantidad();
+        }
+        return total;
     }
 }

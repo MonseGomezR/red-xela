@@ -81,6 +81,7 @@ public final class VistaPrincipalController implements AutoCloseable {
     public VistaPrincipalController() {
     }
 
+    /** Se ejecuta después de cargar el FXML y conecta pantallas, botones y refresco. */
     @FXML
     private void initialize() {
         configurarFondo();
@@ -93,6 +94,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         refresco.play();
     }
 
+    /** Ajusta el fondo al espacio disponible sin incluirlo en el tamaño del contenido. */
     private void configurarFondo() {
         reticula.setManaged(false);
         reticula.widthProperty().bind(superficie.widthProperty());
@@ -101,6 +103,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         reticula.heightProperty().addListener((observable, anterior, actual) -> dibujarFondo());
     }
 
+    /** Comparte una sola sesión del centro entre todas las pantallas. */
     private void crearVistas() {
         monitoreo = new VistaMonitoreo(centro, this::administrar, this::historial);
         comparacion = new VistaComparacion(centro);
@@ -116,6 +119,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         crearDepuracion();
     }
 
+    /** Asocia cada submenú con su página y coloca los controles de inventario. */
     private void configurarNavegacion() {
         submenus = Map.of(
                 Pagina.COMPARACION, subComparacion,
@@ -130,6 +134,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         controlesInventario.getChildren().setAll(inventario.controles());
     }
 
+    /** Define los modos y convierte la velocidad del selector a un valor numérico. */
     private void configurarSimulacion() {
         ToggleGroup modos = new ToggleGroup();
         estandar.setToggleGroup(modos);
@@ -141,6 +146,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         entorno.setText(System.getProperty("os.name") + ", JVM " + Runtime.version().feature());
     }
 
+    /** Refresca la pantalla cada 350 milisegundos en el hilo de JavaFX. */
     private void configurarAnimaciones() {
         pulso = new FadeTransition(Duration.seconds(1.2), estado);
         pulso.setFromValue(1);
@@ -166,51 +172,61 @@ public final class VistaPrincipalController implements AutoCloseable {
         }
     }
 
+    /** Abre el panel de ejecución, recursos y lista de espera. */
     @FXML
     private void monitorear() {
         mostrar(Pagina.MONITOREO);
     }
 
+    /** Abre las ejecuciones de comparación sin cambiar la política de la sesión. */
     @FXML
     private void compararPoliticas() {
         mostrar(Pagina.COMPARACION);
     }
 
+    /** Abre el borrador para registrar un pedido manual. */
     @FXML
     private void nuevoPedido() {
         mostrar(Pagina.PEDIDO);
     }
 
+    /** Abre el registro y la consulta de cuentas. */
     @FXML
     private void gestionarClientes() {
         mostrar(Pagina.CLIENTES);
     }
 
+    /** Abre todos los pedidos y sus estados actuales. */
     @FXML
     private void historial() {
         mostrar(Pagina.HISTORIAL);
     }
 
+    /** Abre el mapa de ubicaciones y las existencias por producto. */
     @FXML
     private void almacenar() {
         mostrar(Pagina.INVENTARIO);
     }
 
+    /** Abre el formulario de llegada de mercadería. */
     @FXML
     private void recepcionar() {
         mostrar(Pagina.RECEPCION);
     }
 
+    /** Abre la preparación y resolución de conflictos. */
     @FXML
     private void administrar() {
         mostrar(Pagina.CONFLICTOS);
     }
 
+    /** Abre la consulta del estado interno de los servicios. */
     @FXML
     private void depurar() {
         mostrar(Pagina.DEPURACION);
     }
 
+    /** Cambia contenido y título y conserva las mismas opciones del menú lateral. */
     private void mostrar(Pagina destino) {
         pagina = destino;
         Node vista = switch (destino) {
@@ -243,6 +259,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         actualizar();
     }
 
+    /** Muestra únicamente los controles que sirven en la página actual. */
     private void actualizarControles(Pagina destino) {
         visible(controlesMonitoreo, destino == Pagina.MONITOREO);
         visible(estado, destino == Pagina.MONITOREO);
@@ -254,6 +271,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         pie.setText(destino == Pagina.MONITOREO ? "CAPACIDAD ALMACÉN:" : "REDXELA");
     }
 
+    /** Marca un grupo principal y el submenú correspondiente a la página abierta. */
     private void seleccionarMenu(Pagina destino) {
         for (Button boton : new Button[] { navMonitoreo, navPedidos, navInventario, navAdmin }) {
             boton.getStyleClass().remove("seleccionado");
@@ -271,6 +289,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         }
     }
 
+    /** Coloca un panel operativo dentro del mismo margen que las demás páginas. */
     private VBox envolver(Node panel) {
         VBox contenedor = new VBox(panel);
         contenedor.getStyleClass().add("pagina");
@@ -280,6 +299,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         return contenedor;
     }
 
+    /** Cambia el reloj del motor y el indicador visual de ejecución. */
     private void activar(boolean activa) {
         centro.getMotor().activar(activa);
         if (activa) {
@@ -291,33 +311,39 @@ public final class VistaPrincipalController implements AutoCloseable {
         actualizar();
     }
 
+    /** Oculta el control y también el espacio que ocupaba en la pantalla. */
     private void visible(Node nodo, boolean mostrar) {
         nodo.setVisible(mostrar);
         nodo.setManaged(mostrar);
     }
 
+    /** Continúa el avance del reloj de pedidos. */
     @FXML
     private void reanudar() {
         activar(true);
     }
 
+    /** Detiene el avance del reloj sin borrar el trabajo que ya existe. */
     @FXML
     private void pausar() {
         activar(false);
     }
 
+    /** Vuelve a la frecuencia habitual de llegadas automáticas. */
     @FXML
     private void modoEstandar() {
         centro.estres(false);
         estandar.setSelected(true);
     }
 
+    /** Aumenta la frecuencia y el tamaño de las llegadas automáticas. */
     @FXML
     private void modoEstres() {
         centro.estres(true);
         estres.setSelected(true);
     }
 
+    /** Solicita al motor un minuto de avance estando en pausa. */
     @FXML
     private void paso() {
         try {
@@ -329,6 +355,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         actualizar();
     }
 
+    /** Consulta los servicios y actualiza solo la página abierta, sin procesar pedidos aquí. */
     private void actualizar() {
         boolean activa = centro.getMotor().activa();
         estado.setText(activa ? (centro.estres() ? "STRESS TEST ACTIVO" : "SIMULACIÓN ACTIVA") : "SIMULACIÓN PAUSADA");
@@ -352,6 +379,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         }
     }
 
+    /** Prepara las columnas para consultar los datos de todos los pedidos de la sesión. */
     private void crearHistorial() {
         tablaPedidos = new TableView<>();
         tablaPedidos.getColumns().add(columna(
@@ -389,9 +417,11 @@ public final class VistaPrincipalController implements AutoCloseable {
         paginaHistorial.getStyleClass().add("pagina");
     }
 
+    /** Renueva estados y conserva tanto la ordenación como el pedido seleccionado. */
     private void actualizarHistorial() {
         MotorSimulacion.VistaPedido seleccion = tablaPedidos.getSelectionModel().getSelectedItem();
         tablaPedidos.getItems().setAll(centro.getMotor().pedidos());
+        tablaPedidos.sort();
         if (seleccion != null) {
             tablaPedidos.getItems()
                     .stream()
@@ -401,6 +431,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         }
     }
 
+    /** Prepara una consulta de recursos, recepción y conflictos para revisar su estado. */
     private void crearDepuracion() {
         registro = new TextArea();
         registro.setEditable(false);
@@ -411,6 +442,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         paginaDepuracion.getStyleClass().add("pagina");
     }
 
+    /** Escribe el estado actual sin perder la posición de lectura del usuario. */
     private void actualizarRegistro() {
         StringBuilder texto = new StringBuilder("RECURSOS COMPARTIDOS\n");
         centro.getRecursos().estados().forEach(resultado -> texto.append(resultado.tipo()).append(" ").append(resultado.numero()).append(": ").append(resultado.disponible() ? "Disponible" : resultado.titular()).append("\n"));
@@ -426,6 +458,7 @@ public final class VistaPrincipalController implements AutoCloseable {
         }
     }
 
+    /** Detiene el refresco visual antes de cerrar los servicios que consulta. */
     @Override
     public void close() {
         if (refresco != null) {

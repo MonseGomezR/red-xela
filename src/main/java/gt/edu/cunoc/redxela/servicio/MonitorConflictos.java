@@ -7,6 +7,7 @@ import java.util.concurrent.CountDownLatch;
 /** Coordina la espera circular entre dos pedidos que llegan al despacho. */
 public final class MonitorConflictos implements AutoCloseable {
 
+    /** Datos de lectura que indican qué acciones puede habilitar la pantalla. */
     public record Vista(boolean activo, boolean recuperando, boolean listo, boolean preparando,
             UUID pedidoA, UUID pedidoB, String mensaje) {
     }
@@ -18,9 +19,11 @@ public final class MonitorConflictos implements AutoCloseable {
         private final UUID pedidoB;
         private final String titularA;
         private final String titularB;
+        // Cada contador llega a cero cuando ambos pedidos alcanzan la misma etapa.
         private final CountDownLatch preparados = new CountDownLatch(2);
         private final CountDownLatch reservados = new CountDownLatch(1);
         private final CountDownLatch listos = new CountDownLatch(2);
+        // Se conservan los trabajadores para poder interrumpir solo al pedido que debe volver a la cola.
         private Thread hiloA;
         private Thread hiloB;
         private boolean continuaA;
@@ -50,6 +53,7 @@ public final class MonitorConflictos implements AutoCloseable {
         this.recursos = recursos;
     }
 
+    /** Crea un escenario nuevo y le asigna un número para distinguirlo de intentos anteriores. */
     public synchronized int configurar(UUID pedidoA, UUID pedidoB, String titularA, String titularB) {
         if (cerrado) {
             throw new IllegalArgumentException("El monitor de conflictos está cerrado.");
@@ -66,11 +70,13 @@ public final class MonitorConflictos implements AutoCloseable {
         return escenario.numero;
     }
 
+    /** Comprueba que este pedido todavía deba entrar al conflicto preparado. */
     public synchronized boolean participa(UUID pedido, int numero) {
         return escenario != null && escenario.numero == numero && !escenario.terminado
                 && !escenario.resolviendo && pertenece(escenario, pedido);
     }
 
+    /** El pedido reencolado espera hasta que termine el elegido para continuar. */
     public synchronized boolean permiteDespacho(UUID pedido, int numero) {
         if (escenario == null || escenario.numero != numero || escenario.terminado || !escenario.resolviendo) {
             return true;
@@ -96,6 +102,7 @@ public final class MonitorConflictos implements AutoCloseable {
             }
         }
         actual.preparados.countDown();
+        // La espera queda fuera de synchronized para que el otro trabajador pueda entrar.
         actual.preparados.await();
         if (esA) {
             boolean reservado = false;
@@ -137,6 +144,7 @@ public final class MonitorConflictos implements AutoCloseable {
         }
     }
 
+    /** Interrumpe al otro pedido para que su finally libere el recurso que necesita el elegido. */
     public void resolver(boolean continuaA) {
         Thread interrumpido;
         synchronized (this) {
@@ -151,6 +159,7 @@ public final class MonitorConflictos implements AutoCloseable {
         interrumpido.interrupt();
     }
 
+    /** Cancela el escenario antes de formar el ciclo y devuelve los pedidos al flujo normal. */
     public void cancelarPreparacion() {
         Escenario actual;
         synchronized (this) {
@@ -167,7 +176,7 @@ public final class MonitorConflictos implements AutoCloseable {
 
     /** Recibe el resultado del mismo trabajador que procesa el pedido. */
     public void finalizarIntento(UUID pedido, int numero, boolean completado) {
-        Escenario interrumpir = null;
+        Escenario escenarioCancelado = null;
         synchronized (this) {
             if (escenario == null || escenario.numero != numero || !pertenece(escenario, pedido)) {
                 return;
@@ -200,14 +209,15 @@ public final class MonitorConflictos implements AutoCloseable {
                 escenario.cancelado = true;
                 escenario.terminado = true;
                 mensaje = "El escenario se interrumpió. Los pedidos vuelven al procesamiento normal.";
-                interrumpir = escenario;
+                escenarioCancelado = escenario;
             }
         }
-        if (interrumpir != null) {
-            interrumpir(interrumpir);
+        if (escenarioCancelado != null) {
+            interrumpir(escenarioCancelado);
         }
     }
 
+    /** Informa si el escenario está en preparación, bloqueado o en recuperación. */
     public synchronized Vista vista() {
         boolean vigente = escenario != null && !escenario.terminado;
         boolean listo = vigente && !escenario.resolviendo && escenario.listos.getCount() == 0;
@@ -218,6 +228,7 @@ public final class MonitorConflictos implements AutoCloseable {
                 escenario == null ? null : escenario.pedidoB, mensaje);
     }
 
+    /** Evita que un trabajador continúe con un escenario cancelado o reemplazado. */
     private Escenario comprobarEscenario(int numero) throws InterruptedException {
         if (cerrado || escenario == null || escenario.numero != numero || escenario.cancelado || escenario.terminado) {
             throw new InterruptedException("El escenario ya no está activo.");
@@ -229,6 +240,7 @@ public final class MonitorConflictos implements AutoCloseable {
         return pedido.equals(actual.pedidoA) || pedido.equals(actual.pedidoB);
     }
 
+    /** Avisa a los trabajadores del escenario para que salgan de sus esperas. */
     private synchronized void interrumpir(Escenario actual) {
         if (actual.hiloA != null && actual.hiloA != Thread.currentThread()) {
             actual.hiloA.interrupt();
@@ -238,6 +250,7 @@ public final class MonitorConflictos implements AutoCloseable {
         }
     }
 
+    /** Cancela el escenario y despierta a los trabajadores bloqueados antes del cierre del motor. */
     @Override
     public void close() {
         Escenario actual;

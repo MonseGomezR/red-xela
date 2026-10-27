@@ -49,6 +49,7 @@ public final class VistaComparacion extends VBox {
         actualizar();
     }
 
+    /** Pide una comparación al servicio y muestra cualquier dato que falte corregir. */
     private void comparar() {
         error.setText("");
         try {
@@ -59,6 +60,7 @@ public final class VistaComparacion extends VBox {
         actualizar();
     }
 
+    /** Muestra resultados nuevos y deshabilita el inicio mientras otra ejecución sigue activa. */
     public void actualizar() {
         ComparadorPoliticas comparador = centro.getComparador();
         List<ResultadoComparacion> lista = comparador.getResultados();

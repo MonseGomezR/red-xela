@@ -24,13 +24,14 @@ public enum NivelServicio {
         this.esperaObjetivo = esperaObjetivo;
     }
 
+    /** Un número menor tiene mayor prioridad de atención. */
     public int getPrioridad() {
         return prioridad;
     }
 
     /**
      * Exprés requiere atención inmediata, sin asignarle un plazo arbitrario.
-     * @return
+     * Devuelve un tiempo para los demás servicios y Optional vacío para exprés.
      */
     public Optional<Duration> getEsperaObjetivo() {
         return Optional.ofNullable(esperaObjetivo);

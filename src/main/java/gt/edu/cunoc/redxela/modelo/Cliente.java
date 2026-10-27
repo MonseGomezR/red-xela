@@ -7,10 +7,12 @@ import java.util.regex.Pattern;
 
 /**
  * Cuenta de cliente y servicio contratado para sus nuevos pedidos.
+ * El record conserva esos datos y genera los métodos de lectura, como nombre() e id().
  */
 public record Cliente(UUID id, String nombre, String correo, NivelServicio nivelServicio) {
 
     private static final Pattern CORREO_VALIDO = Pattern.compile("[^\\s@]+@[^\\s@]+\\.[^\\s@]+", Pattern.UNICODE_CHARACTER_CLASS);
+    /** Limpia nombre y correo y rechaza una cuenta incompleta o con correo inválido. */
     public Cliente {
         Objects.requireNonNull(id, "El identificador del cliente es obligatorio.");
         Objects.requireNonNull(nombre, "El nombre es obligatorio.");

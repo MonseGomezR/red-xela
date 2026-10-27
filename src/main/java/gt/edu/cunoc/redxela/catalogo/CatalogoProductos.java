@@ -22,10 +22,12 @@ public final class CatalogoProductos {
     private CatalogoProductos() {
     }
 
+    /** Entrega el catálogo fijo; el stock se consulta en Almacen. */
     public static List<Producto> getProductos() {
         return PRODUCTOS;
     }
 
+    /** Busca sin distinguir mayúsculas ni espacios exteriores y avisa si no existe. */
     public static Optional<Producto> buscarPorCodigo(String codigo) {
         if (codigo == null || codigo.isBlank()) {
             return Optional.empty();

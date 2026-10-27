@@ -52,6 +52,7 @@ public final class VistasOperativas {
         actualizar();
     }
 
+    /** Construye el formulario que envía un mensaje de mercadería recibida. */
     private VBox crearPanelRecepcion() {
         Button entrada = boton("REGISTRAR ENTRADA", "boton-secundario", this::registrarEntrada);
         entrada.setMaxWidth(Double.MAX_VALUE);
@@ -73,10 +74,12 @@ public final class VistasOperativas {
         return conflictos;
     }
 
+    /** Coloca el nombre del dato sobre su control de entrada. */
     private VBox campo(String nombre, javafx.scene.Node control) {
         return new VBox(8, texto(nombre, "etiqueta"), control);
     }
 
+    /** Reparte el ancho disponible entre campos de la misma fila. */
     private HBox campos(Region... elementos) {
         HBox fila = new HBox(16, elementos);
         for (Region numero : elementos) {
@@ -87,6 +90,7 @@ public final class VistasOperativas {
         return fila;
     }
 
+    /** Envía al monitor cuál de los dos pedidos debe continuar. */
     private void resolver(boolean continuaA) {
         avisoConflicto.setText("");
         try {
@@ -97,20 +101,34 @@ public final class VistasOperativas {
         actualizar();
     }
 
+    /** Busca el pedido que más espera entre los que superaron su objetivo y aún no se priorizaron. */
     private Optional<MotorSimulacion.VistaPedido> demorado() {
-        return centro.getMotor().espera()
-                .stream()
-                .filter(pedido -> !pedido.preferente())
-                .filter(pedido -> pedido.estado() != EstadoPedido.EN_CONFLICTO)
-                .filter(pedido -> pedido.espera() > pedido.pedido().nivelServicio().getEsperaObjetivo()
-                .map(d -> (double) d.toMinutes()).orElse(1.0)).max(Comparator.comparingDouble(MotorSimulacion.VistaPedido::espera));
+        MotorSimulacion.VistaPedido mayorEspera = null;
+        for (MotorSimulacion.VistaPedido pedido : centro.getMotor().espera()) {
+            if (pedido.preferente() || pedido.estado() == EstadoPedido.EN_CONFLICTO) {
+                continue;
+            }
+            double objetivo = pedido.pedido().nivelServicio().getEsperaObjetivo()
+                    .map(duracion -> (double) duracion.toMinutes()).orElse(1.0);
+            if (pedido.espera() > objetivo && (mayorEspera == null || pedido.espera() > mayorEspera.espera())) {
+                mayorEspera = pedido;
+            }
+        }
+        return Optional.ofNullable(mayorEspera);
     }
 
+    /** Da preferencia al pedido demorado sin intervenir los recursos de un conflicto. */
     private void priorizar() {
-        demorado().ifPresent(pedido -> centro.getMotor().priorizar(pedido.pedido().id()));
+        try {
+            demorado().ifPresent(pedido -> centro.getMotor().priorizar(pedido.pedido().id()));
+        } catch (IllegalArgumentException exception) {
+            // El planificador puede haber asignado el pedido después de consultar la cola.
+            mensaje(avisoConflicto, exception.getMessage(), true);
+        }
         actualizar();
     }
 
+    /** Consulta el conflicto, los tiempos de espera y el resultado de la última entrada. */
     public void actualizar() {
         actualizarConflictos();
         actualizarEspera();
@@ -125,6 +143,7 @@ public final class VistasOperativas {
         ));
     }
 
+    /** Agrupa la selección de pedidos, su espera circular y la alerta por demora. */
     private VBox crearPanelConflictos() {
         VBox ciclo = tarjeta(tituloCiclo, conflicto, campos(continuarA, continuarB));
         ciclo.getStyleClass().add("alerta-conflicto");
@@ -147,6 +166,7 @@ public final class VistasOperativas {
         return panel;
     }
 
+    /** Carga productos y muelles y define los nombres legibles de sus selectores. */
     private void configurarRecepcion() {
         recibido.getItems().setAll(CatalogoProductos.getProductos());
         recibido.getSelectionModel().selectFirst();
@@ -176,6 +196,7 @@ public final class VistasOperativas {
         });
     }
 
+    /** Convierte la cantidad a entero y envía la entrada a la cola de recepción. */
     private void registrarEntrada() {
         try {
             int cantidad = Integer.parseInt(lote.getText().strip());
@@ -188,6 +209,7 @@ public final class VistasOperativas {
         }
     }
 
+    /** Muestra qué retiene cada pedido y habilita la recuperación solo cuando el ciclo está listo. */
     private void actualizarConflictos() {
         MonitorConflictos.Vista vista = centro.getConflictos().vista();
         cuentaConflictos.setText(vista.activo() ? "1 ACTIVO" : "0 ACTIVOS");
@@ -205,6 +227,7 @@ public final class VistasOperativas {
         actualizarPedidosConflicto(vista);
     }
 
+    /** Muestra código, servicio y cantidad de los pedidos en los dos selectores. */
     private void configurarPedidosConflicto() {
         for (ComboBox<Pedido> selector : Arrays.asList(pedidoA, pedidoB)) {
             selector.setMaxWidth(Double.MAX_VALUE);
@@ -224,6 +247,7 @@ public final class VistasOperativas {
         }
     }
 
+    /** Actualiza los candidatos cuando no hay escenario activo y conserva la selección válida. */
     private void actualizarPedidosConflicto(MonitorConflictos.Vista vista) {
         boolean enCurso = vista.activo() || vista.preparando() || vista.recuperando();
         pedidoA.setDisable(enCurso);
@@ -247,6 +271,7 @@ public final class VistasOperativas {
         }
     }
 
+    /** Programa un conflicto entre dos pedidos existentes y muestra errores de selección o stock. */
     private void prepararConflicto() {
         avisoConflicto.setText("");
         try {
@@ -259,6 +284,7 @@ public final class VistasOperativas {
         actualizar();
     }
 
+    /** Devuelve los pedidos al flujo normal si el escenario todavía se está preparando. */
     private void cancelarPreparacion() {
         avisoConflicto.setText("");
         try {
@@ -269,6 +295,7 @@ public final class VistasOperativas {
         actualizar();
     }
 
+    /** Muestra la demora del candidato a recibir prioridad manual. */
     private void actualizarEspera() {
         Optional<MotorSimulacion.VistaPedido> demorado = demorado();
         aumentar.setDisable(demorado.isEmpty());

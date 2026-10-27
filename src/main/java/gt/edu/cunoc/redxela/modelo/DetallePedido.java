@@ -7,6 +7,7 @@ import java.util.Objects;
  */
 public record DetallePedido(Producto producto, int cantidad) {
 
+    /** Impide guardar una línea sin producto o con una cantidad cero o negativa. */
     public DetallePedido {
         Objects.requireNonNull(producto, "El producto es obligatorio.");
         if (cantidad <= 0) {

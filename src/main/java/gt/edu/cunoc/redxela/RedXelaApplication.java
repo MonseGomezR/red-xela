@@ -19,6 +19,10 @@ public class RedXelaApplication extends Application {
 
     private VistaPrincipalController controlador;
 
+    public RedXelaApplication() {
+    }
+
+    /** Carga fuentes y FXML y muestra la ventana principal en el hilo de JavaFX. */
     @Override
     public void start(Stage stage) {
         try {
@@ -54,10 +58,12 @@ public class RedXelaApplication extends Application {
         }
     }
 
+    /** Entrega el arranque a JavaFX, que después llama a start. */
     public static void main(String[] args) {
         launch(args);
     }
 
+    /** Al cerrar la ventana, detiene las animaciones y todos los trabajadores del centro. */
     @Override
     public void stop() {
         if (controlador != null) {

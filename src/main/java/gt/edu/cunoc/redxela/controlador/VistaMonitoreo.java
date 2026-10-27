@@ -80,6 +80,7 @@ public final class VistaMonitoreo extends VBox {
         actualizar();
     }
 
+    /** Construye un indicador que después recibe valores calculados por el motor. */
     private VBox kpi(Feather simbolo, Label valor, String titulo, Label detalle, String color) {
         Label icono = tituloIcono(simbolo, "", "icono-kpi");
         icono.getStyleClass().add("tinte-" + color);
@@ -88,6 +89,7 @@ public final class VistaMonitoreo extends VBox {
         return indicador;
     }
 
+    /** Añade una unidad física al panel y prepara su indicador de uso. */
     private void agregar(GridPane cuadricula, TipoRecurso tipo, int numero, int columna, int fila, int ancho) {
         Label simbolo = tituloIcono(iconoRecurso(tipo), "", "simbolo-recurso");
         Label titular = texto("DISPONIBLE", "destacado");
@@ -118,6 +120,7 @@ public final class VistaMonitoreo extends VBox {
         cuadricula.add(tarjetaRecurso, columna, fila, ancho, 1);
     }
 
+    /** Traduce el tipo y número del recurso a la etiqueta que muestra la tarjeta. */
     private String nombre(TipoRecurso tipo, int numero) {
         return switch (tipo) {
             case ESTACION_EMPAQUE -> "EMPAQUE " + numero;
@@ -129,6 +132,7 @@ public final class VistaMonitoreo extends VBox {
         };
     }
 
+    /** Elige un icono de la biblioteca para cada tipo de recurso. */
     private Feather iconoRecurso(TipoRecurso tipo) {
         return switch (tipo) {
             case ESTACION_EMPAQUE -> Feather.PACKAGE;
@@ -139,6 +143,7 @@ public final class VistaMonitoreo extends VBox {
         };
     }
 
+    /** Consulta pedidos y recursos y renueva el panel desde el hilo de JavaFX. */
     public void actualizar() {
         actualizarIndicadores();
         List<GestorRecursos.Estado> estados = centro.getRecursos().estados();
@@ -148,6 +153,7 @@ public final class VistaMonitoreo extends VBox {
         actualizarListaEspera(pedidos.size());
     }
 
+    /** Reúne los nombres y cantidades de productos para identificar el trabajo del pedido. */
     private String resumenProductos(Pedido pedido) {
         return pedido.detalles()
                 .stream()
@@ -155,10 +161,12 @@ public final class VistaMonitoreo extends VBox {
                 .collect(java.util.stream.Collectors.joining("; ")) + ". Total: " + pedido.getTotalArticulos() + " unidades";
     }
 
+    /** Detiene los pulsos de los iconos cuando se cierra la ventana. */
     public void detenerAnimaciones() {
         recursos.forEach(recursoVisual -> recursoVisual.pulso().stop());
     }
 
+    /** Organiza las seis métricas y ajusta sus columnas al ancho disponible. */
     private GridPane crearIndicadores() {
         GridPane indicadores = new GridPane();
         indicadores.setHgap(24);
@@ -188,6 +196,7 @@ public final class VistaMonitoreo extends VBox {
         return indicadores;
     }
 
+    /** Crea una tarjeta por cada una de las 26 unidades, dentro de un panel desplazable. */
     private GridPane crearCuadriculaRecursos() {
         GridPane cuadricula = new GridPane();
         cuadricula.setHgap(10);
@@ -236,6 +245,7 @@ public final class VistaMonitoreo extends VBox {
         return cuadricula;
     }
 
+    /** Envía al motor el criterio elegido para ordenar las siguientes asignaciones. */
     private ComboBox<PoliticaAtencion> crearSelectorPolitica() {
         ComboBox<PoliticaAtencion> politica = new ComboBox<>();
         politica.getItems().setAll(PoliticaAtencion.values());
@@ -247,6 +257,7 @@ public final class VistaMonitoreo extends VBox {
         return politica;
     }
 
+    /** Agrupa la política activa y una vista corta de los primeros pedidos pendientes. */
     private VBox crearListaEspera() {
         ComboBox<PoliticaAtencion> politica = crearSelectorPolitica();
         Region relleno = new Region();
@@ -263,6 +274,7 @@ public final class VistaMonitoreo extends VBox {
         return lista;
     }
 
+    /** Presenta las métricas actuales del motor y el estado del conflicto. */
     private void actualizarIndicadores() {
         MotorSimulacion.Estadisticas estadisticas = centro.getMotor().estadisticas();
         completados.setText(Integer.toString(estadisticas.completados()));
@@ -284,6 +296,7 @@ public final class VistaMonitoreo extends VBox {
         mensajeConflicto.setText(detalle);
     }
 
+    /** Muestra quién usa cada unidad y distingue los recursos retenidos en el conflicto. */
     private void actualizarRecursos(List<GestorRecursos.Estado> estados, List<MotorSimulacion.VistaPedido> pedidos) {
         Map<String, MotorSimulacion.VistaPedido> porTitular = new HashMap<>();
         pedidos.forEach(pedido -> porTitular.put("P-" + pedido.pedido().id().toString().substring(0, 8), pedido));
@@ -316,6 +329,7 @@ public final class VistaMonitoreo extends VBox {
         }
     }
 
+    /** Muestra preparación, despacho o bloqueo con el progreso de cada pedido activo. */
     private void actualizarPedidosActivos(
             List<GestorRecursos.Estado> estados,
             List<MotorSimulacion.VistaPedido> pedidos
@@ -364,6 +378,7 @@ public final class VistaMonitoreo extends VBox {
         }
     }
 
+    /** Muestra los primeros seis de la cola y avisa cuando faltan existencias. */
     private void actualizarListaEspera(int cantidadPedidos) {
         cola.getChildren().clear();
         List<MotorSimulacion.VistaPedido> pendientes = centro.getMotor().espera();

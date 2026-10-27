@@ -25,6 +25,7 @@ public final class ComparadorPoliticas implements AutoCloseable {
     public ComparadorPoliticas() {
     }
 
+    /** Copia los pendientes y el inventario mientras la sesión principal está pausada. */
     public synchronized void iniciar(MotorSimulacion principal, Almacen almacen) {
         if (cerrado) {
             throw new IllegalStateException("La comparación está cerrada.");
@@ -58,6 +59,7 @@ public final class ComparadorPoliticas implements AutoCloseable {
         trabajador.submit(() -> comparar(numero, carga, inventario));
     }
 
+    /** Aparta de la copia las unidades que pertenecen a pedidos activos de la sesión principal. */
     private void descontarPedidoActivo(Map<Producto, Integer> inventario, Pedido pedido) {
         // Estas unidades pertenecen a pedidos que continúan en la sesión principal.
         for (DetallePedido detalle : pedido.detalles()) {
@@ -67,6 +69,7 @@ public final class ComparadorPoliticas implements AutoCloseable {
         }
     }
 
+    /** Ejecuta las cuatro políticas una por una y guarda sus resultados por separado. */
     private void comparar(int numero, List<Pedido> carga, Map<Producto, Integer> inventario) {
         try {
             for (PoliticaAtencion politica : PoliticaAtencion.values()) {
@@ -100,6 +103,7 @@ public final class ComparadorPoliticas implements AutoCloseable {
         }
     }
 
+    /** Crea un motor y recursos propios; ejecuta 30 minutos simulados y luego los cierra. */
     private ResultadoComparacion ejecutarPolitica(int numero, PoliticaAtencion politica,
             List<Pedido> carga, Map<Producto, Integer> inventario) throws InterruptedException {
         Almacen copia = new Almacen();
@@ -109,6 +113,7 @@ public final class ComparadorPoliticas implements AutoCloseable {
             }
         }
         GestorRecursos recursos = new GestorRecursos();
+        // try cierra el motor aunque la comparación falle o sea interrumpida.
         try (MotorSimulacion motor = new MotorSimulacion(copia, recursos)) {
             motor.politica(politica);
             motor.velocidad(VELOCIDAD_COMPARACION);
@@ -126,6 +131,7 @@ public final class ComparadorPoliticas implements AutoCloseable {
         }
     }
 
+    /** Entrega una copia de los resultados acumulados durante la sesión. */
     public synchronized List<ResultadoComparacion> getResultados() {
         return new ArrayList<>(resultados);
     }
@@ -138,13 +144,18 @@ public final class ComparadorPoliticas implements AutoCloseable {
         return estado;
     }
 
+    /** Interrumpe la comparación y espera el cierre del motor que estuviera usando. */
     @Override
-    public synchronized void close() {
-        cerrado = true;
-        if (ejecutando) {
-            estado = "Comparación interrumpida al cerrar.";
+    public void close() {
+        synchronized (this) {
+            cerrado = true;
+            if (ejecutando) {
+                estado = "Comparación interrumpida al cerrar.";
+            }
         }
-        ejecutando = false;
-        trabajador.shutdownNow();
+        FabricaHilos.detener(trabajador);
+        synchronized (this) {
+            ejecutando = false;
+        }
     }
 }

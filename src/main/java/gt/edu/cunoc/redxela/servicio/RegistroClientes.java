@@ -15,19 +15,24 @@ public final class RegistroClientes {
 
     private final Map<UUID, Cliente> clientes = new LinkedHashMap<>();
 
+    public RegistroClientes() {
+    }
+
     /**
      * La validación y el alta son atómicas para no duplicar correos entre hilos.
      */
     public synchronized Cliente registrar(String nombre, String correo, NivelServicio nivelServicio) {
         Cliente cliente = new Cliente(UUID.randomUUID(), nombre, correo, nivelServicio);
-        boolean correoRegistrado = clientes.values().stream().anyMatch(existente -> existente.correo().equals(cliente.correo()));
-        if (correoRegistrado) {
-            throw new IllegalArgumentException("Ya existe un cliente con ese correo.");
+        for (Cliente existente : clientes.values()) {
+            if (existente.correo().equals(cliente.correo())) {
+                throw new IllegalArgumentException("Ya existe un cliente con ese correo.");
+            }
         }
         clientes.put(cliente.id(), cliente);
         return cliente;
     }
 
+    /** Devuelve la cuenta si existe; Optional vacío indica que no se encontró. */
     public synchronized Optional<Cliente> buscarPorId(UUID id) {
         return Optional.ofNullable(clientes.get(id));
     }

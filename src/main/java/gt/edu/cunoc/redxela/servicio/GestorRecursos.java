@@ -6,6 +6,7 @@ import java.util.concurrent.Semaphore;
 
 /**
  * Cada unidad física dispone de un semáforo binario y un titular visible.
+ * synchronized protege la asignación del titular y el semáforo controla el permiso de uso.
  */
 public final class GestorRecursos {
 
@@ -13,6 +14,7 @@ public final class GestorRecursos {
 
         private final TipoRecurso tipo;
         private final int numero;
+        // Un permiso permite un solo usuario; true respeta la cola de quienes esperan con acquire.
         private final Semaphore permiso = new Semaphore(1, true);
         private String titular;
 
@@ -22,6 +24,7 @@ public final class GestorRecursos {
         }
     }
 
+    /** Copia del recurso y su usuario actual para las pantallas. */
     public record Estado(TipoRecurso tipo, int numero, String titular) {
 
         public boolean disponible() {
@@ -31,6 +34,7 @@ public final class GestorRecursos {
 
     private final List<Unidad> unidades = new ArrayList<>();
 
+    /** Crea una unidad y un semáforo para cada recurso físico. */
     public GestorRecursos() {
         for (TipoRecurso tipo : TipoRecurso.values()) {
             for (int i = 1; i <= tipo.getCapacidad(); i++) {
@@ -50,10 +54,15 @@ public final class GestorRecursos {
             if (cantidad < 0 || cantidad > tipo.getCapacidad()) {
                 throw new IllegalArgumentException("Cantidad de recursos inválida.");
             }
-            List<Unidad> libres = unidades
-                    .stream()
-                    .filter(unidad -> unidad.tipo == tipo && unidad.titular == null && unidad.permiso.availablePermits() == 1).limit(cantidad)
-                    .toList();
+            List<Unidad> libres = new ArrayList<>();
+            for (Unidad unidad : unidades) {
+                if (libres.size() == cantidad) {
+                    break;
+                }
+                if (unidad.tipo == tipo && unidad.titular == null && unidad.permiso.availablePermits() == 1) {
+                    libres.add(unidad);
+                }
+            }
             if (libres.size() != cantidad) {
                 return false;
             }
@@ -74,6 +83,7 @@ public final class GestorRecursos {
         return true;
     }
 
+    /** Libera solo las unidades de ese usuario; una segunda llamada no duplica permisos. */
     public synchronized void liberar(String titular) {
         for (Unidad unidad : unidades) {
             if (titular.equals(unidad.titular)) {
@@ -83,10 +93,16 @@ public final class GestorRecursos {
         }
     }
 
+    /** Devuelve datos de lectura sin entregar los semáforos a la interfaz. */
     public synchronized List<Estado> estados() {
-        return unidades.stream().map(unidad -> new Estado(unidad.tipo, unidad.numero, unidad.titular)).toList();
+        List<Estado> resultado = new ArrayList<>();
+        for (Unidad unidad : unidades) {
+            resultado.add(new Estado(unidad.tipo, unidad.numero, unidad.titular));
+        }
+        return resultado;
     }
 
+    /** Toma juntos el muelle elegido y el escáner, o deja ambos disponibles. */
     public synchronized boolean intentarRecepcion(String titular, int muelle) {
         Unidad carga = unidad(TipoRecurso.AREA_CARGA, muelle);
         Unidad escaner = unidad(TipoRecurso.ESCANER, 1);
@@ -105,7 +121,7 @@ public final class GestorRecursos {
     /**
      * Reserva las primeras unidades para la demostración controlada de espera circular.
      */
-    public synchronized boolean prepararConflicto(String a, String b) {
+    public synchronized boolean prepararConflicto(String titularA, String titularB) {
         Unidad carga = unidad(TipoRecurso.AREA_CARGA, 1);
         Unidad escaner = unidad(TipoRecurso.ESCANER, 1);
         if (carga.titular != null || escaner.titular != null || carga.permiso.availablePermits() == 0 || escaner.permiso.availablePermits() == 0) {
@@ -118,8 +134,8 @@ public final class GestorRecursos {
             carga.permiso.release();
             return false;
         }
-        carga.titular = a;
-        escaner.titular = b;
+        carga.titular = titularA;
+        escaner.titular = titularB;
         return true;
     }
 
@@ -137,11 +153,13 @@ public final class GestorRecursos {
         }
     }
 
+    /** Busca una unidad física por su tipo y número. */
     private Unidad unidad(TipoRecurso tipo, int numero) {
-        return unidades
-                .stream()
-                .filter(unidad -> unidad.tipo == tipo && unidad.numero == numero)
-                .findFirst()
-                .orElseThrow();
+        for (Unidad unidad : unidades) {
+            if (unidad.tipo == tipo && unidad.numero == numero) {
+                return unidad;
+            }
+        }
+        throw new IllegalArgumentException("El recurso indicado no existe.");
     }
 }

@@ -52,6 +52,7 @@ public final class VistaInventario extends VBox {
         actualizar();
     }
 
+    /** Colorea cada celda según ocupación y reservas y renueva los totales del almacén. */
     public void actualizar() {
         Almacen.Resumen resumen = centro.getAlmacen().resumen();
         libres.setText(Integer.toString(resumen.libres()));
@@ -75,6 +76,7 @@ public final class VistaInventario extends VBox {
         actualizarCatalogo();
     }
 
+    /** Filtra productos y muestra stock total, unidades disponibles y proporción sin reservar. */
     private void actualizarCatalogo() {
         catalogo.getChildren().clear();
         String filtro = buscar.getText().strip().toLowerCase(Locale.ROOT);
@@ -112,6 +114,7 @@ public final class VistaInventario extends VBox {
         return controles;
     }
 
+    /** Pide la compactación al almacén; si hay reservas, muestra por qué debe esperar. */
     private void optimizarEspacio() {
         try {
             centro.getAlmacen().optimizar();
@@ -122,6 +125,7 @@ public final class VistaInventario extends VBox {
         }
     }
 
+    /** Dibuja dos pasillos, con dos niveles y doce celdas en cada nivel. */
     private VBox crearMapa() {
         VBox mapa = new VBox(26);
         for (int pasillo = 0; pasillo < 2; pasillo++) {
@@ -152,6 +156,7 @@ public final class VistaInventario extends VBox {
         return mapa;
     }
 
+    /** Prepara los totales de ubicaciones, espacio libre y fragmentación. */
     private HBox crearIndicadores() {
         HBox datos = new HBox(
                 16,
@@ -174,6 +179,7 @@ public final class VistaInventario extends VBox {
         return datos;
     }
 
+    /** Construye la búsqueda y el listado de productos sin permitir modificar el catálogo. */
     private VBox crearCatalogo() {
         buscar.setPromptText("Buscar producto, código o categoría...");
         buscar.textProperty().addListener((o, a, b) -> actualizarCatalogo());

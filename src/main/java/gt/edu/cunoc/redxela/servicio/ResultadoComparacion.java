@@ -8,6 +8,7 @@ public final class ResultadoComparacion {
     private final int pedidos;
     private final MotorSimulacion.Estadisticas estadisticas;
 
+    /** Conserva las métricas finales del motor que ejecutó esta política. */
     public ResultadoComparacion(int ejecucion, PoliticaAtencion politica, int pedidos,
             MotorSimulacion.Estadisticas estadisticas) {
         this.ejecucion = ejecucion;
@@ -32,6 +33,7 @@ public final class ResultadoComparacion {
         return estadisticas.completados();
     }
 
+    /** Incluye los pedidos que seguían activos o esperando al terminar los 30 minutos. */
     public int getPendientes() {
         return pedidos - estadisticas.completados();
     }
